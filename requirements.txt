@@ -1,0 +1,6 @@
+Flask==2.1.1
+Flask-SocketIO==5.1.1
+python-socketio==5.5.2
+pyserial==3.5
+manuf
+git+https://github.com/coolbho3k/manuf.git
