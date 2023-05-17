@@ -1,81 +1,73 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flask App</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <title>Device Scanner</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Scanner</h1>
+
+        <div id="serial-ports" class="mb-3">
+            <h2>Serial Ports</h2>
+            <select id="port-selector" class="form-control"></select>
+            <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
+            <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
+            <div id="command-response" class="mt-2"></div>
+        </div>
+
+        <div id="network-interfaces" class="mb-3">
+            <h2>Network Interfaces</h2>
+            <select id="interface-selector" class="form-control"></select>
+            <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
+            <div id="wifi-scan-results" class="mt-2"></div>
+        </div>
+
+        <div id="wifi-details" class="mb-3">
+            <h2>WiFi Details</h2>
+            <table id="wifi-details-table" class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Command</th>
+                        <th>Result</th>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
     <script>
         $(document).ready(function() {
             $.get('/get_serial_ports', function(data) {
-                data.serial_ports.forEach(function(port) {
-                    $('#serial-port-select').append(`<option value="${port}">${port}</option>`);
+                data.forEach(function(port) {
+                    $('#port-selector').append(new Option(port, port));
                 });
             });
 
             $.get('/get_network_interfaces', function(data) {
-                data.network_interfaces.forEach(function(interface) {
-                    $('#network-interface-select').append(`<option value="${interface}">${interface}</option>`);
+                data.forEach(function(interface) {
+                    $('#interface-selector').append(new Option(interface, interface));
                 });
             });
-        });
-    </script>
-</head>
-<body>
-    <h1>Flask App</h1>
 
-    <h2>Serial Ports</h2>
-    <select id="serial-port-select">
-        <option selected>Select a Serial Port</option>
-    </select>
-
-    <h2>Network Interfaces</h2>
-    <select id="network-interface-select">
-        <option selected>Select a Network Interface</option>
-    </select>
-
-    <h2>WiFi Scan</h2>
-    <button id="start-wifi-scan">Start WiFi Scan</button>
-
-    <h2>WiFi Devices</h2>
-    <table id="wifi-devices-table">
-        <thead>
-            <tr>
-                <th>MAC</th>
-                <th>SSID</th>
-                <th>ESSID</th>
-                <th>Device Type</th>
-                <th>Track</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
-
-    <script>
-        $('#start-wifi-scan').click(function() {
-            const interface = $('#network-interface-select').val();
-
-            $.post('/wifi_scan', { interface: interface }, function(data) {
-                const tbody = $('#wifi-devices-table tbody');
-                tbody.empty();
-
-                data.devices.forEach(function(device) {
-                    tbody.append(`
-                        <tr>
-                            <td>${device.mac}</td>
-                            <td>${device.ssid}</td>
-                            <td>${device.essid}</td>
-                            <td>${device.device_type}</td>
-                            <td><button class="track-button">Track</button></td>
-                        </tr>
-                    `);
+            $('#send-command-button').click(function() {
+                $.post('/send_command', {port: $('#port-selector').val(), command: $('#command-input').val()}, function(data) {
+                    $('#command-response').text(data.response);
                 });
             });
-        });
 
-        $(document).on('click', '.track-button', function() {
-            const row = $(this).parent().parent();
-            const mac = row.find('td:nth-child(1)').text();
-            console.log(`Track button clicked for device with MAC address: ${mac}`);
+            var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
+            $('#wifi-scan-button').click(function() {
+                $('#wifi-details-table tbody').empty();
+                commands.forEach(function(command) {
+                    $.post('/wifi_scan', {interface: $('#interface-selector').val(), command: command}, function(data) {
+                        $('#wifi-details-table tbody').append(`<tr><td>${command}</td><td>${data.result}</td></tr>`);
+                    });
+                });
+            });
         });
     </script>
 </body>
