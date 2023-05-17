@@ -34,7 +34,7 @@ def send_command(ser, command):
         time.sleep(0.01)
     ser.write(b'\r\n')
 
- @app.route('/get_serial_ports', methods=['GET'])
+@app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
 
