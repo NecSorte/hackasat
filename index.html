@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Tracker</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Device Tracker</h1>
+        <div class="form-group">
+            <label for="port">Serial Port:</label>
+            <select class="form-control" id="port">
+                {% for port in serial_ports %}
+                    <option>{{ port }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="command">Command:</label>
+            <input type="text" class="form-control" id="command">
+        </div>
+        <button type="button" class="btn btn-primary" onclick="sendCommand()">Send Command</button>
+        <button type="button" class="btn btn-primary" onclick="startScan()">Start Scan</button>
+        <div class="form-group">
+            <label for="response">Response:</label>
+            <textarea class="form-control" id="response" readonly></textarea>
+        </div>
+        <hr>
+        <h2>Wi-Fi Scan</h2>
+        <div class="form-group">
+            <label for="wireless_interface">Wireless Interface:</label>
+            <select class="form-control" id="wireless_interface">
+                {% for interface in wireless_interfaces %}
+                    <option>{{ interface }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="wifiScan()">Start Wi-Fi Scan</button>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>MAC</th>
+                        <th>SSID</th>
+                        <th>ESSID</th>
+                        <th>Device Type</th>
+                    </tr>
+                </thead>
+                <tbody id="devices_table">
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function sendCommand() {
+            const port = $('#port').val();
+            const command = $('#command').val();
+            $.post('/send_command', {port: port, command: command}, function(data) {
+                $('#response').val(data.response);
+            });
+        }
+
+        function startScan() {
+            const port = $('#port').val();
+            $.post('/start_scan', {port: port}, function(data) {
+                if (data.success) {
+                    alert('Scan started');
+                }
+            });
+        }
+
+        function wifiScan() {
+            const interface = $('#wireless_interface').val();
+            $.post('/wifi_scan', {interface: interface}, function(data) {
+                let devices_table = '';
+                for (const device of data.devices) {
+                    devices_table += `<tr><td>${device.mac}</td><td>${device.ssid}</td><td>${device.essid}</td><td>${device
