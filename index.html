@@ -11,11 +11,7 @@
 
         <div id="serial-ports" class="mb-3">
             <h2>Serial Ports</h2>
-            <select id="port-selector" class="form-control">
-                {% for port in serial_ports %}
-                    <option value="{{ port }}">{{ port }}</option>
-                {% endfor %}
-            </select>
+            <select id="port-selector" class="form-control"></select>
             <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
             <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
             <div id="command-response" class="mt-2"></div>
@@ -23,11 +19,7 @@
 
         <div id="network-interfaces" class="mb-3">
             <h2>Network Interfaces</h2>
-            <select id="interface-selector" class="form-control">
-                {% for interface in network_interfaces %}
-                    <option value="{{ interface }}">{{ interface }}</option>
-                {% endfor %}
-            </select>
+            <select id="interface-selector" class="form-control"></select>
             <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
@@ -58,59 +50,64 @@
     </div>
 
     <script>
-     $(document).ready(function() {
-    $.get('/get_serial_ports', function(data) {
-        data.forEach(function(port) {
-            $('#port-selector').append($('<option>', {
-                value: port,
-                text: port
-            }));
-        });
-    });
+        $(document).ready(function() {
+            $.get('/get_serial_ports', function(data) {
+                data.forEach(function(port) {
+                    $('#port-selector').append($('<option>', {
+                        value: port,
+                        text: port
+                    }));
+                });
+            });
 
-    $.get('/get_network_interfaces', function(data) {
-        data.forEach(function(interface) {
-            $('#interface-selector').append($('<option>', {
-                value: interface,
-                text: interface
-            }));
-        });
-    });
+            $.get('/get_network_interfaces', function(data) {
+                data.forEach(function(interface) {
+                    $('#interface-selector').append($('<option>', {
+                        value: interface,
+                        text: interface
+                    }));
+                });
+            });
 
             $('#send-command-button').click(function() {
-                $.post('/send_command', {port: $('#port-selector').val(), command: $('#command-input').val()}, function(data) {
+                $.post('/send_command', {
+                    port: $('#port-selector').val(),
+                    command: $('#command-input').val()
+                }, function(data) {
                     $('#command-response').text(data.response);
                 });
             });
 
             $('#wifi-scan-button').click(function() {
-                $.post('/wifi_scan', {interface: $('#interface-selector').val()}, function(data) {
-                    populateWifiDetailsTable(data);
+                $.post('/wifi_scan', {
+                    interface: $('#interface-selector').val()
+                }, function(data) {
+                    populateWifiDetailsTable(data.devices);
                 });
             });
 
-function populateWifiDetailsTable(scanResults) {
-    var tableBody = $('#wifi-details-table tbody');
-    tableBody.empty();
+            function populateWifiDetailsTable(scanResults) {
+                var tableBody = $('#wifi-details-table tbody');
+                tableBody.empty();
 
-    scanResults.forEach(function(device) {
-        var row = $('<tr>');
-        row.append($('<td>').text(device.macAddress));
-
-        commands.forEach(function(command) {
-            var cell = $('<td>').text(device[command] || '');
-            row.append(cell);
-        });
-
-        tableBody.append(row);
-    });
-}
-
-                tableBody.append(row);
+                scanResults.forEach(function(device) {
+                    var row = $('<tr>');
+                    row.append($('<td>').text(device.mac));
+                    row.append($('<td>').text(device.frequency || ''));
+                    row.append($('<td>').text(device.rate || ''));
+                    row.append($('<td>').text(device.keys ||''));
+                    row.append($('<td>').text(device.power || ''));
+                    row.append($('<td>').text(device.txpower || ''));
+                    row.append($('<td>').text(device.retry || ''));
+                    row.append($('<td>').text(device.event || ''));
+                    row.append($('<td>').text(device.auth || ''));
+                    row.append($('<td>').text(device.wpakeys || ''));
+                    row.append($('<td>').text(device.genie || ''));
+                    row.append($('<td>').text(device.modulation || ''));
+                    
+                    tableBody.append(row);
             });
         }
-
-        var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
     });
 </script>
 </body>
