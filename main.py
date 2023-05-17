@@ -60,6 +60,13 @@ def handle_send_command():
     
     return jsonify(response=response)
 
+@app.route('/iwlist', methods=['POST'])
+def handle_iwlist():
+    interface = request.form['interface']
+    command = request.form['command']
+    output = os.popen(f'sudo iwlist {interface} {command}').read()
+    return jsonify(output=output)
+
 @app.route('/start_scan', methods=['POST'])
 def handle_start_scan():
     port = request.form['port']
