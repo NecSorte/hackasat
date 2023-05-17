@@ -1,82 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Tracker</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <title>Device Scanner</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 </head>
 <body>
     <div class="container">
-        <h1>Device Tracker</h1>
-        <div class="form-group">
-            <label for="port">Serial Port:</label>
-            <select class="form-control" id="port">
-                {% for port in serial_ports %}
-                    <option>{{ port }}</option>
-                {% endfor %}
-            </select>
+        <h1>Device Scanner</h1>
+
+        <div id="serial-ports" class="mb-3">
+            <h2>Serial Ports</h2>
+            <select id="port-selector" class="form-control"></select>
+            <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
+            <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
+            <div id="command-response" class="mt-2"></div>
         </div>
-        <div class="form-group">
-            <label for="command">Command:</label>
-            <input type="text" class="form-control" id="command">
-        </div>
-        <button type="button" class="btn btn-primary" onclick="sendCommand()">Send Command</button>
-        <button type="button" class="btn btn-primary" onclick="startScan()">Start Scan</button>
-        <div class="form-group">
-            <label for="response">Response:</label>
-            <textarea class="form-control" id="response" readonly></textarea>
-        </div>
-        <hr>
-        <h2>Wi-Fi Scan</h2>
-        <div class="form-group">
-            <label for="wireless_interface">Wireless Interface:</label>
-            <select class="form-control" id="wireless_interface">
-                {% for interface in wireless_interfaces %}
-                    <option>{{ interface }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <button type="button" class="btn btn-primary" onclick="wifiScan()">Start Wi-Fi Scan</button>
-        <div class="table-responsive">
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>MAC</th>
-                        <th>SSID</th>
-                        <th>ESSID</th>
-                        <th>Device Type</th>
-                    </tr>
-                </thead>
-                <tbody id="devices_table">
-                </tbody>
-            </table>
+
+        <div id="network-interfaces" class="mb-3">
+            <h2>Network Interfaces</h2>
+            <select id="interface-selector" class="form-control"></select>
+            <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
+            <div id="wifi-scan-results" class="mt-2"></div>
         </div>
     </div>
+
     <script>
-        function sendCommand() {
-            const port = $('#port').val();
-            const command = $('#command').val();
-            $.post('/send_command', {port: port, command: command}, function(data) {
-                $('#response').val(data.response);
+    $(document).ready(function() {
+        $.get('/', function(data) {
+            data.serial_ports.forEach(function(port) {
+                $('#port-selector').append(new Option(port, port));
             });
-        }
-
-        function startScan() {
-            const port = $('#port').val();
-            $.post('/start_scan', {port: port}, function(data) {
-                if (data.success) {
-                    alert('Scan started');
-                }
+            data.network_interfaces.forEach(function(interface) {
+                $('#interface-selector').append(new Option(interface, interface));
             });
-        }
+        });
 
-        function wifiScan() {
-            const interface = $('#wireless_interface').val();
-            $.post('/wifi_scan', {interface: interface}, function(data) {
-                let devices_table = '';
-                for (const device of data.devices) {
-                    devices_table += `<tr><td>${device.mac}</td><td>${device.ssid}</td><td>${device.essid}</td><td>${device
+        $('#send-command-button').click(function() {
+            $.post('/send_command', {port: $('#port-selector').val(), command: $('#command-input').val()}, function(data) {
+                $('#command-response').text(data.response);
+            });
+        });
+
+        $('#wifi-scan-button').click(function() {
+            $.post('/wifi_scan', {interface: $('#interface-selector').val()}, function(data) {
+                $('#wifi-scan-results').empty();
+                data.devices.forEach(function(device) {
+                    $('#wifi-scan-results').append(`<p>${device.mac} - ${device.ssid} - ${device.essid} - ${device.device_type}</p>`);
+                });
+            });
+        });
+    });
+    </script>
+</body>
+</html>
