@@ -86,29 +86,33 @@
                 });
             });
 
-            function populateWifiDetailsTable(scanResults) {
-                var tableBody = $('#wifi-details-table tbody');
-                tableBody.empty();
+            
+    function populateWifiDetailsTable(scanResults) {
+        var tableBody = $('#wifi-details-table tbody');
+        tableBody.empty();
 
-                scanResults.forEach(function(device) {
-                    var row = $('<tr>');
-                    row.append($('<td>').text(device.mac));
-                    row.append($('<td>').text(device.frequency || ''));
-                    row.append($('<td>').text(device.rate || ''));
-                    row.append($('<td>').text(device.keys ||''));
-                    row.append($('<td>').text(device.power || ''));
-                    row.append($('<td>').text(device.txpower || ''));
-                    row.append($('<td>').text(device.retry || ''));
-                    row.append($('<td>').text(device.event || ''));
-                    row.append($('<td>').text(device.auth || ''));
-                    row.append($('<td>').text(device.wpakeys || ''));
-                    row.append($('<td>').text(device.genie || ''));
-                    row.append($('<td>').text(device.modulation || ''));
+        scanResults.forEach(function(device) {
+            var row = $('<tr>');
+            row.append($('<td>').text(device.mac));
+            row.append($('<td>').text(device.essid || ''));
+            row.append($('<td>').text(device.ssid || ''));
+            row.append($('<td>').text(device.frequency || ''));
+            row.append($('<td>').text(device.rate || ''));
+            row.append($('<td>').text(device.keys || ''));
+            row.append($('<td>').text(device.power || ''));
+            row.append($('<td>').text(device.txpower || ''));
+            row.append($('<td>').text(device.retry || ''));
+            row.append($('<td>').text(device.event || ''));
+            row.append($('<td>').text(device.auth || ''));
+            row.append($('<td>').text(device.wpakeys || ''));
+            row.append($('<td>').text(device.genie || ''));
+            row.append($('<td>').text(device.modulation || ''));
+
+            tableBody.append(row);
+        });
+    }
+});
                     
-                    tableBody.append(row);
-            });
-        }
-    });
 </script>
 </body>
 </html>
