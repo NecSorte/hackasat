@@ -1,59 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Device Scanner</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <title>Flask App</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 </head>
 <body>
-    <div class="container">
-        <h1>Device Scanner</h1>
+    <h1>Flask App</h1>
 
-        <div id="serial-ports" class="mb-3">
-            <h2>Serial Ports</h2>
-            <select id="port-selector" class="form-control"></select>
-            <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
-            <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
-            <div id="command-response" class="mt-2"></div>
-        </div>
+    <!-- Serial Port Dropdown -->
+    <label for="serialPort">Serial Port:</label>
+    <select id="serialPort"></select>
 
-        <div id="network-interfaces" class="mb-3">
-            <h2>Network Interfaces</h2>
-            <select id="interface-selector" class="form-control"></select>
-            <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
-            <div id="wifi-scan-results" class="mt-2"></div>
-        </div>
-    </div>
+    <!-- Network Interface Dropdown -->
+    <label for="networkInterface">Network Interface:</label>
+    <select id="networkInterface"></select>
 
-<script>
-$(document).ready(function() {
-    $.get('/get_serial_ports', function(data) {
-        data.forEach(function(port) {
-            $('#port-selector').append(new Option(port, port));
-        });
-    });
+    <button id="track-button" style="display: none;">Track</button>
+    <table id="iwlist-table">
+        <thead>
+            <tr>
+                <th>Select</th>
+                <th>Command</th>
+                <th>Output</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
 
-    $.get('/get_network_interfaces', function(data) {
-        data.forEach(function(interface) {
-            $('#interface-selector').append(new Option(interface, interface));
-        });
-    });
+    <script>
+        $(document).ready(function() {
+            $.getJSON('/get_serial_ports', function(data) {
+                data.serial_ports.forEach(function(port) {
+                    $('#serialPort').append($('<option>', { value: port, text: port }));
+                });
+            });
 
-    $('#send-command-button').click(function() {
-        $.post('/send_command', {port: $('#port-selector').val(), command: $('#command-input').val()}, function(data) {
-            $('#command-response').text(data.response);
-        });
-    });
+            $.getJSON('/get_network_interfaces', function(data) {
+                data.network_interfaces.forEach(function(interface) {
+                    $('#networkInterface').append($('<option>', { value: interface, text: interface }));
+                });
+            });
 
-    $('#wifi-scan-button').click(function() {
-        $.post('/wifi_scan', {interface: $('#interface-selector').val()}, function(data) {
-            $('#wifi-scan-results').empty();
-            data.devices.forEach(function(device) {
-                $('#wifi-scan-results').append(`<p>${device.mac} - ${device.ssid} - ${device.essid} - ${device.device_type}</p>`);
+            var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
+
+            $("#networkInterface").change(function() {
+                var interface = $(this).val();
+                $("#iwlist-table tbody").empty();
+
+                commands.forEach(function(command) {
+                    $.post("/iwlist", {interface: interface, command: command}, function(data) {
+                        var row = $("<tr>");
+                        row.append($("<td>").append($("<input>").attr({type: "checkbox"})));
+                        row.append($("<td>").text(command));
+                        row.append($("<td>").text(data.output));
+                        $("#iwlist-table tbody").append(row);
+                    });
+                });
+            });
+
+            $("#iwlist-table").on("change", "input[type='checkbox']", function() {
+                if ($("#iwlist-table input[type='checkbox']:checked").length > 0) {
+                    $("#track-button").show();
+                } else {
+                    $("#track-button").hide();
+                }
+            });
+
+            $("#track-button").click(function() {
+                $("#iwlist-table input[type='checkbox']:checked").each(function() {
+                    var command = $(this).closest("tr").find("td:nth-child(2)").text();
+                    console.log("Tracking " + command); // replace this with your actual tracking code
+                });
             });
         });
-    });
-});
-</script>
+    </script>
 </body>
 </html>
