@@ -1,19 +1,30 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Flask App</title>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<title>Device Scanner</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 </head>
 <body>
-    <h1>Flask App</h1>
+<body>
+    <div class="container">
+        <h1>Device Scanner</h1>
 
-    <!-- Serial Port Dropdown -->
-    <label for="serialPort">Serial Port:</label>
-    <select id="serialPort"></select>
+        <div id="serial-ports" class="mb-3">
+            <h2>Serial Ports</h2>
+            <select id="port-selector" class="form-control"></select>
+            <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
+            <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
+            <div id="command-response" class="mt-2"></div>
+        </div>
 
-    <!-- Network Interface Dropdown -->
-    <label for="networkInterface">Network Interface:</label>
-    <select id="networkInterface"></select>
+        <div id="network-interfaces" class="mb-3">
+            <h2>Network Interfaces</h2>
+            <select id="interface-selector" class="form-control"></select>
+            <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
+            <div id="wifi-scan-results" class="mt-2"></div>
+        </div>
+    </div>
 
     <button id="track-button" style="display: none;">Track</button>
     <table id="iwlist-table">
