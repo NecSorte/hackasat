@@ -102,16 +102,21 @@ def parse_wifi_scan_output(output):
 
             for i in range(index + 1, len(lines)):
                 if "ESSID" in lines[i]:
-                    ssid = lines[i].split('"')[1]
+                    essid = lines[i].split('"')[1]
                     break
 
             for i in range(index + 1, len(lines)):
                 if "Quality" in lines[i]:
-                    essid = lines[i].split()[-1]
+                    ssid = lines[i].split()[-1]
                     break
 
             device_type = p.get_manuf(mac)
-            devices.append({"mac": mac, "ssid": ssid, "essid": essid, "device_type": device_type})
+            devices.append({
+                "mac": mac,
+                "ssid": ssid,
+                "essid": essid,
+                "device_type": device_type
+            })
 
     return devices
 
