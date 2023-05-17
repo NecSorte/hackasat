@@ -29,8 +29,18 @@
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Command</th>
-                        <th>Result</th>
+                        <th>MAC Address</th>
+                        <th>frequency</th>
+                        <th>rate</th>
+                        <th>keys</th>
+                        <th>power</th>
+                        <th>txpower</th>
+                        <th>retry</th>
+                        <th>event</th>
+                        <th>auth</th>
+                        <th>wpakeys</th>
+                        <th>genie</th>
+                        <th>modulation</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -59,16 +69,35 @@
                 });
             });
 
-            var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
             $('#wifi-scan-button').click(function() {
-                $('#wifi-details-table tbody').empty();
-                commands.forEach(function(command) {
-                    $.post('/wifi_scan', {interface: $('#interface-selector').val(), command: command}, function(data) {
-                        $('#wifi-details-table tbody').append(`<tr><td>${command}</td><td>${data.result}</td></tr>`);
-                    });
+                $.post('/wifi_scan', {interface: $('#interface-selector').val()}, function(data) {
+                    populateWifiDetailsTable(data);
                 });
             });
+
+function populateWifiDetailsTable(scanResults) {
+    var tableBody = $('#wifi-details-table tbody');
+    tableBody.empty();
+
+    scanResults.forEach(function(device) {
+        var row = $('<tr>');
+        row.append($('<td>').text(device.macAddress));
+
+        commands.forEach(function(command) {
+            var cell = $('<td>').text(device[command] || '');
+            row.append(cell);
         });
-    </script>
+
+        tableBody.append(row);
+    });
+}
+
+                tableBody.append(row);
+            });
+        }
+
+        var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
+    });
+</script>
 </body>
 </html>
