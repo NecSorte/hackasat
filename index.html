@@ -29,6 +29,8 @@
                 {% endfor %}
             </select>
             <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
+            <button id="array-scan-button" class="btn btn-primary mt-2">Start Array Scan</button>
+
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
 
@@ -101,7 +103,7 @@
             wifiScan();
 
             // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
+            intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
         });
 
         // Define the function to perform a wifi scan
