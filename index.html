@@ -118,6 +118,10 @@
             tableBody.empty();
 
             scanResults.forEach(function(device) {
+                if (!device.macAddress) {
+                    return; // skip this device if it doesn't have a macAddress
+                }
+
                 var row = $('<tr>');
                 row.append($('<td>').text(device.macAddress));
 
@@ -129,6 +133,7 @@
                 tableBody.append(row);
             });
         }
+
     });
     </script>
 </body>
