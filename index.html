@@ -51,50 +51,40 @@
 
     <script>
         $(document).ready(function() {
-    var intervalId;
-
-    $.get('/get_serial_ports', function(data) {
-        data.forEach(function(port) {
-            $('#port-selector').append($('<option>', {
-                value: port,
-                text: port
-            }));
-        });
-    });
-
-    $.get('/get_network_interfaces', function(data) {
-        data.forEach(function(interface) {
-            $('#interface-selector').append($('<option>', {
-                value: interface,
-                text: interface
-            }));
-        });
-    });
-
-    $('#send-command-button').click(function() {
-        $.post('/send_command', {
-            port: $('#port-selector').val(),
-            command: $('#command-input').val()
-        }, function(data) {
-            $('#command-response').text(data.response);
-        });
-    });
-
-    $('#wifi-scan-button').click(function() {
-        if (intervalId) {  // If there's already an interval, clear it
-            clearInterval(intervalId);
-            intervalId = null;
-        }
-
-        intervalId = setInterval(function() {
-            $.post('/wifi_scan', {
-                interface: $('#interface-selector').val()
-            }, function(data) {
-                populateWifiDetailsTable(data.devices);
+            $.get('/get_serial_ports', function(data) {
+                data.forEach(function(port) {
+                    $('#port-selector').append($('<option>', {
+                        value: port,
+                        text: port
+                    }));
+                });
             });
-        }, 1000);  // 1000ms is 1 second
-    });
-});
+
+            $.get('/get_network_interfaces', function(data) {
+                data.forEach(function(interface) {
+                    $('#interface-selector').append($('<option>', {
+                        value: interface,
+                        text: interface
+                    }));
+                });
+            });
+
+            $('#send-command-button').click(function() {
+                $.post('/send_command', {
+                    port: $('#port-selector').val(),
+                    command: $('#command-input').val()
+                }, function(data) {
+                    $('#command-response').text(data.response);
+                });
+            });
+
+            $('#wifi-scan-button').click(function() {
+                $.post('/wifi_scan', {
+                    interface: $('#interface-selector').val()
+                }, function(data) {
+                    populateWifiDetailsTable(data.devices);
+                });
+            });
 
             
     function populateWifiDetailsTable(scanResults) {
