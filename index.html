@@ -118,17 +118,15 @@
             tableBody.empty();
 
             scanResults.forEach(function(device) {
-                if (!device.macAddress) {
-                    return; // skip this device if it doesn't have a macAddress
-                }
-
                 var row = $('<tr>');
-                row.append($('<td>').text(device.macAddress));
-
-                commands.forEach(function(command) {
-                    var cell = $('<td>').text(device[command] || '');
-                    row.append(cell);
-                });
+                row.append($('<td>').text(device.mac));
+                row.append($('<td>').text(device.essid));
+                row.append($('<td>').text(device.protocol));
+                row.append($('<td>').text(device.mode));
+                row.append($('<td>').text(device.frequency));
+                row.append($('<td>').text(device.encryption));
+                row.append($('<td>').text(device.rate));
+                row.append($('<td>').text(device.signal));
 
                 tableBody.append(row);
             });
