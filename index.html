@@ -115,7 +115,7 @@ $(document).ready(function() {
     function arrayScan() {
         // Call the /array_scan endpoint
         $.post('/array_scan', {
-            interface: $('#interface-selector').val(),
+            port: $('#port-selector').val(),
             azimuth: currentAzimuth,
             elevation: currentElevation
         }, function(data) {
