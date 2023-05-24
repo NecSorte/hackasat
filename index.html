@@ -60,39 +60,38 @@
     </div>
 
 
-    <script>
-    $(document).ready(function() {
-        var intervalId;
-        var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
+<script>
+$(document).ready(function() {
+    var intervalId;
+    var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
 
-        $.get('/get_serial_ports', function(data) {
-            data.forEach(function(port) {
-                $('#port-selector').append($('<option>', {
-                    value: port,
-                    text: port
-                }));
-            });
+    $.get('/get_serial_ports', function(data) {
+        data.forEach(function(port) {
+            $('#port-selector').append($('<option>', {
+                value: port,
+                text: port
+            }));
         });
+    });
 
-        $.get('/get_network_interfaces', function(data) {
-            data.forEach(function(interface) {
-                $('#interface-selector').append($('<option>', {
-                    value: interface,
-                    text: interface
-                }));
-            });
+    $.get('/get_network_interfaces', function(data) {
+        data.forEach(function(interface) {
+            $('#interface-selector').append($('<option>', {
+                value: interface,
+                text: interface
+            }));
         });
+    });
 
-        $('#send-command-button').click(function() {
-            $.post('/send_command', {
-                port: $('#port-selector').val(),
-                command: $('#command-input').val()
-            }, function(data) {
-                $('#command-response').text(data.response);
-            });
+    $('#send-command-button').click(function() {
+        $.post('/send_command', {
+            port: $('#port-selector').val(),
+            command: $('#command-input').val()
+        }, function(data) {
+            $('#command-response').text(data.response);
         });
+    });
 
-        
     // Define the start and end values for azimuth and elevation
     const AZIMUTH_START = 160;
     const AZIMUTH_END = 6400;
@@ -141,51 +140,50 @@
         // Call the function again after a delay to create a loop
         setTimeout(arrayScan, 1000);  // adjust delay as needed
     }
-});
-        
-        $('#wifi-scan-button').click(function() {
-            // If there's already an interval, clear it
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
-
-            // Perform the first scan immediately upon button click
-            wifiScan();
-
-            // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
-        });
-
-        // Define the function to perform a wifi scan
-        function wifiScan() {
-            $.post('/wifi_scan', {
-                interface: $('#interface-selector').val()
-            }, function(data) {
-                populateWifiDetailsTable(data.devices);
-            });
+    
+    $('#wifi-scan-button').click(function() {
+        // If there's already an interval, clear it
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
         }
 
-        function populateWifiDetailsTable(scanResults) {
-            var tableBody = $('#wifi-details-table tbody');
-            tableBody.empty();
+        // Perform the first scan immediately upon button click
+        wifiScan();
 
-            scanResults.forEach(function(device) {
-                var row = $('<tr>');
-                row.append($('<td>').text(device.mac));
-                row.append($('<td>').text(device.essid));
-                row.append($('<td>').text(device.protocol));
-                row.append($('<td>').text(device.mode));
-                row.append($('<td>').text(device.frequency));
-                row.append($('<td>').text(device.encryption));
-                row.append($('<td>').text(device.rate));
-                row.append($('<td>').text(device.signal));
-
-                tableBody.append(row);
-            });
-        }
-
+        // Set up the interval for subsequent scans
+        intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
     });
-    </script>
+
+    // Define the function to perform a wifi scan
+    function wifiScan() {
+        $.post('/wifi_scan', {
+            interface: $('#interface-selector').val()
+        }, function(data) {
+            populateWifiDetailsTable(data.devices);
+        });
+    }
+
+    function populateWifiDetailsTable(scanResults) {
+        var tableBody = $('#wifi-details-table tbody');
+        tableBody.empty();
+
+        scanResults.forEach(function(device) {
+            var row = $('<tr>');
+            row.append($('<td>').text(device.mac));
+            row.append($('<td>').text(device.essid));
+            row.append($('<td>').text(device.protocol));
+            row.append($('<td>').text(device.mode));
+            row.append($('<td>').text(device.frequency));
+            row.append($('<td>').text(device.encryption));
+            row.append($('<td>').text(device.rate));
+            row.append($('<td>').text(device.signal));
+
+            tableBody.append(row);
+        });
+    }
+
+});
+</script>
 </body>
 </html>
