@@ -92,6 +92,57 @@
             });
         });
 
+        
+    // Define the start and end values for azimuth and elevation
+    const AZIMUTH_START = 160;
+    const AZIMUTH_END = 6400;
+    const ELEVATION_START = 650;
+    const ELEVATION_END = 1400;
+
+    // Define the current azimuth and elevation
+    var currentAzimuth = AZIMUTH_START;
+    var currentElevation = ELEVATION_START;
+
+    // Define the increment values for azimuth and elevation
+    var azimuthIncrement = 100;  // adjust as needed
+    var elevationIncrement = 50;  // adjust as needed
+
+    // Array scan button click event handler
+    $('#array-scan-button').click(function() {
+        arrayScan(); // Starts the array scan when the button is clicked
+    });
+
+    // Define the function to perform an array scan
+    function arrayScan() {
+        // Call the /array_scan endpoint
+        $.post('/array_scan', {
+            interface: $('#interface-selector').val(),
+            azimuth: currentAzimuth,
+            elevation: currentElevation
+        }, function(data) {
+            populateWifiDetailsTable(data.devices);
+        });
+
+        // Increment the azimuth and elevation for the next scan
+        currentAzimuth += azimuthIncrement;
+        currentElevation += elevationIncrement;
+
+        // If we've reached the end of the azimuth range, reset to the start and move to the next elevation
+        if (currentAzimuth > AZIMUTH_END) {
+            currentAzimuth = AZIMUTH_START;
+            currentElevation += elevationIncrement;
+        }
+
+        // If we've reached the end of the elevation range, reset to the start
+        if (currentElevation > ELEVATION_END) {
+            currentElevation = ELEVATION_START;
+        }
+
+        // Call the function again after a delay to create a loop
+        setTimeout(arrayScan, 1000);  // adjust delay as needed
+    }
+});
+        
         $('#wifi-scan-button').click(function() {
             // If there's already an interval, clear it
             if (intervalId) {
