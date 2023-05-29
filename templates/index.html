@@ -253,12 +253,21 @@ function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
 
     sortedDevices.sort(function (a, b) {
-        const valueA = a[sortColumn].toLowerCase();
-        const valueB = b[sortColumn].toLowerCase();
+        const valueA = a[sortColumn];
+        const valueB = b[sortColumn];
 
-        if (valueA < valueB) {
+        if (valueA == null || valueA === undefined) {
             return sortDirection === 'asc' ? -1 : 1;
-        } else if (valueA > valueB) {
+        } else if (valueB == null || valueB === undefined) {
+            return sortDirection === 'asc' ? 1 : -1;
+        }
+
+        const lowerCaseA = valueA.toString().toLowerCase();
+        const lowerCaseB = valueB.toString().toLowerCase();
+
+        if (lowerCaseA < lowerCaseB) {
+            return sortDirection === 'asc' ? -1 : 1;
+        } else if (lowerCaseA > lowerCaseB) {
             return sortDirection === 'asc' ? 1 : -1;
         } else {
             return 0;
@@ -267,6 +276,7 @@ function sortDevices(devices, sortColumn, sortDirection) {
 
     return sortedDevices;
 }
+
     
 });
 </script>
