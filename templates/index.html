@@ -176,13 +176,19 @@ $(document).ready(function() {
         }
     });
 
-    // Define the function to perform a wifi scan
+    var allDevices = [];  // Array to accumulate all devices
+
     function wifiScan() {
         $.post('/wifi_scan', {
             interface: $('#interface-selector').val()
         }, function(data) {
-            console.log(data); // Log data to console
-            populateWifiDetailsTable(data.devices);
+            // Merge new devices with previously found devices
+            allDevices = [...allDevices, ...data.devices];
+
+            // Eliminate duplicates
+            const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
+
+            populateWifiDetailsTable(uniqueDevices);
         });
     }
 
