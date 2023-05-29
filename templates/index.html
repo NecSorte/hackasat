@@ -158,25 +158,45 @@ $(document).ready(function() {
 
     
     $('#wifi-scan-button').click(function() {
+        wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
+
         // Update the wifi scan button appearance
         if (wifiScanActive) {
-            $(this).text('Stop WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
-            wifiScanActive = false;
-        } else {
             $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
-            wifiScanActive = true;
             wifiScan();
+            // Set up the interval for subsequent scans
+            intervalId = setInterval(wifiScan, 50); // 1000 ms = 1 second
+        } else {
+            $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
+            // If there's already an interval, clear it
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
         }
     });
-    
-    // Define the function to perform a wifi scan
-    function wifiScan() {
-        $.post('/wifi_scan', {
-            interface: $('#interface-selector').val()
-        }, function(data) {
-            populateWifiDetailsTable(data.devices);
-        });
-    }
+
+var allDevices = [];  // Array to accumulate all devices
+
+// Define the function to perform a wifi scan
+function wifiScan() {
+    // Call the /wifi_scan endpoint
+    $.post('/wifi_scan', {
+        interface: $('#interface-selector').val()
+    }, function(data) {
+        if(data && data.devices) { // Check if devices array exists in response
+            // Merge new devices with previously found devices
+            allDevices = [...allDevices, ...data.devices];
+
+            // Eliminate duplicates
+            const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
+            
+            populateWifiDetailsTable(uniqueDevices);
+        }
+    }).fail(function() {
+        console.log('Failed to retrieve devices');
+    });
+}
 
     function populateWifiDetailsTable(devices) {
         // Clear the table
