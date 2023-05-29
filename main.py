@@ -23,8 +23,8 @@ except:
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
     interfaces = set(result.split('\n'))
-    interfaces.discard('')  # Remove any empty strings
-    return list(interfaces)
+    interfaces = [iface.rstrip(':') for iface in interfaces if iface.strip()]
+    return interfaces
 
 def get_serial_ports():
     ports = [f'/dev/{dev}' for dev in os.listdir('/dev') if dev.startswith('ttyACM') or dev.startswith('ttyUSB')]
