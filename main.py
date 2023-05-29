@@ -88,7 +88,7 @@ def handle_wifi_scan():
     interface = request.form['interface']
     output = os.popen(f'sudo iwlist {interface} scan').read()
     devices = parse_wifi_scan_output(output)
-    return jsonify(devices=devices)
+    return jsonify(devices=list(devices.values()))
 
 def parse_wifi_scan_output(output):
     devices = {}
@@ -96,54 +96,37 @@ def parse_wifi_scan_output(output):
 
     p = manuf.MacParser()
 
-    regexes = {
-        'mac': re.compile(r'Address: (.*)'),
-        'essid': re.compile(r'ESSID:"(.*)"'),
-        'mode': re.compile(r'Mode:(.*)'),
-        'channel': re.compile(r'Channel:(\d+)'),
-        'frequency': re.compile(r'Frequency:(\d+\.\d+) GHz'),
-        'quality': re.compile(r'Quality=(\d+)/\d+'),
-        'signal': re.compile(r'Signal level=(\-?\d+) dBm'),
-        'noise': re.compile(r'Noise level=(\-?\d+) dBm')
-    }
+    for index, line in enumerate(lines):
+        if "Address" in line:
+            mac = line.split()[-1]
+            if mac in devices:  # Skip if device already added
+                continue
 
-    encryption_regexes = {
-        'WEP': re.compile(r'Encryption key:on'),
-        'WPA': re.compile(r'IE: WPA Version 1'),
-        'WPA2': re.compile(r'IE: IEEE 802.11i/WPA2 Version 1'),
-        'WPA2 Enterprise': re.compile(r'IE: IEEE 802.11i/WPA2 Version 1\n.*Authentication Suites \(1\) : 802\.1x'),
-        'WPA3': re.compile(r'IE: IEEE 802.11i/WPA2 Version 3'),
-        'WPA Enterprise': re.compile(r'IE: WPA Version \d+\n.*Authentication Suites \(1\) : 802\.1x'),
-    }
+            device_data = {
+                "mac": mac,
+                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
+                "mode": extract_value(lines, index, "Mode:(.*)"),
+                "channel": extract_value(lines, index, "Channel:(.*)"),
+                "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                "quality": extract_value(lines, index, "Quality=(.*)"),
+                "signal": extract_value(lines, index, "Signal level=(.*)"),
+                "noise": extract_value(lines, index, "Noise level=(.*)"),
+                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                "device_type": p.get_manuf(mac)
+            }
 
-    device = {}
-    for line in lines:
-        for key, regex in regexes.items():
-            match = regex.search(line)
-            if match:
-                device[key] = match.group(1)
+            devices[mac] = device_data
 
-        if 'Encryption key:off' in line:
-            device['encryption'] = 'Open'
-        else:
-            for enc_type, regex in encryption_regexes.items():
-                if regex.search(output):
-                    device['encryption'] = enc_type
-                    break
+    return devices
 
-        # When a new cell is detected, save the previous device and create a new one
-        if line.startswith('Cell'):
-            if 'mac' in device:
-                device['device_type'] = p.get_manuf(device.get('mac', ''))
-                devices[device['mac']] = device
-            device = {}
+def extract_value(lines, start_index, pattern):
+    regex = re.compile(pattern)
+    for i in range(start_index + 1, len(lines)):
+        match = regex.search(lines[i])
+        if match:
+            return match.group(1)
+    return None
 
-    # Don't forget to add the last device
-    if 'mac' in device:
-        device['device_type'] = p.get_manuf(device.get('mac', ''))
-        devices[device['mac']] = device
-
-    return list(devices.values())
 
 
 
