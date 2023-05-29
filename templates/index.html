@@ -65,6 +65,10 @@ $(document).ready(function() {
     var intervalId;
     var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
 
+    // State variables to keep track of whether wifi and array scanning are active
+    var wifiScanActive = false;
+    var arrayScanActive = false;
+    
     $.get('/get_serial_ports', function(data) {
         data.forEach(function(port) {
             $('#port-selector').append($('<option>', {
@@ -108,51 +112,72 @@ $(document).ready(function() {
 
     // Array scan button click event handler
     $('#array-scan-button').click(function() {
-        arrayScan(); // Starts the array scan when the button is clicked
+        arrayScanActive = !arrayScanActive; // Toggle the array scan state
+
+        // Update the array scan button appearance
+        if (arrayScanActive) {
+            $(this).text('Stop Array Scan').addClass('btn-danger').removeClass('btn-primary');
+            arrayScan();
+        } else {
+            $(this).text('Start Array Scan').addClass('btn-primary').removeClass('btn-danger');
+            // You would also need to figure out how to stop the arrayScan function once it's been started
+        }
     });
+
+    // Define the arrayScan timeout ID outside the arrayScan function
+    var arrayScanTimeoutId = null;
 
     // Define the function to perform an array scan
     function arrayScan() {
-        // Call the /array_scan endpoint
-        $.post('/array_scan', {
-            port: $('#port-selector').val(),
-            azimuth: currentAzimuth,
-            elevation: currentElevation
-        }, function(data) {
-            populateWifiDetailsTable(data.devices);
-        });
+        // Only execute the scan if the arrayScanActive flag is true
+        if (arrayScanActive) {
+            // Call the /array_scan endpoint
+            $.post('/array_scan', {
+                port: $('#port-selector').val(),
+                azimuth: currentAzimuth,
+                elevation: currentElevation
+            }, function(data) {
+                populateWifiDetailsTable(data.devices);
+            });
 
-        // Increment the azimuth and elevation for the next scan
-        currentAzimuth += azimuthIncrement;
-        currentElevation += elevationIncrement;
-
-        // If we've reached the end of the azimuth range, reset to the start and move to the next elevation
-        if (currentAzimuth > AZIMUTH_END) {
-            currentAzimuth = AZIMUTH_START;
+            // Increment the azimuth and elevation for the next scan
+            currentAzimuth += azimuthIncrement;
             currentElevation += elevationIncrement;
-        }
 
-        // If we've reached the end of the elevation range, reset to the start
-        if (currentElevation > ELEVATION_END) {
-            currentElevation = ELEVATION_START;
-        }
+            // If we've reached the end of the azimuth range, reset to the start and move to the next elevation
+            if (currentAzimuth > AZIMUTH_END) {
+                currentAzimuth = AZIMUTH_START;
+                currentElevation += elevationIncrement;
+            }
 
-        // Call the function again after a delay to create a loop
-        setTimeout(arrayScan, 1000);  // adjust delay as needed
+            // If we've reached the end of the elevation range, reset to the start
+            if (currentElevation > ELEVATION_END) {
+                currentElevation = ELEVATION_START;
+            }
+
+            // Call the function again after a delay to create a loop, saving the timeout ID
+            arrayScanTimeoutId = setTimeout(arrayScan, 5000);  // adjust delay as needed 1000 = 1 second
+        }
     }
+
     
     $('#wifi-scan-button').click(function() {
-        // If there's already an interval, clear it
-        if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
+        wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
+
+        // Update the wifi scan button appearance
+        if (wifiScanActive) {
+            $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
+            wifiScan();
+            // Set up the interval for subsequent scans
+            intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
+        } else {
+            $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
+            // If there's already an interval, clear it
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
         }
-
-        // Perform the first scan immediately upon button click
-        wifiScan();
-
-        // Set up the interval for subsequent scans
-        intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
     });
 
     // Define the function to perform a wifi scan
