@@ -104,26 +104,41 @@ def parse_wifi_scan_output(output):
         'frequency': re.compile(r'Frequency:(\d+\.\d+) GHz'),
         'quality': re.compile(r'Quality=(\d+)/\d+'),
         'signal': re.compile(r'Signal level=(\-?\d+) dBm'),
-        'encryption': re.compile(r'Encryption key:(.*)'),
-        'encryption_type': re.compile(r'IE: (WPA2?|WEP)')
+        'noise': re.compile(r'Noise level=(\-?\d+) dBm')
     }
 
-    for index, line in enumerate(lines):
-        if "Cell" in line:
+    device = {}
+    for line in lines:
+        for key, regex in regexes.items():
+            match = regex.search(line)
+            if match:
+                device[key] = match.group(1)
+
+        if 'Encryption key' in line:
+            encryption = line.split(':')[1]
+            if 'encryption' in device:
+                device['encryption'] += '; ' + encryption
+            else:
+                device['encryption'] = encryption
+                
+        if 'IE: ' in line:
+            if 'encryption' in device:
+                device['encryption'] += '; ' + line.split(':', 1)[1].strip()
+            else:
+                device['encryption'] = line.split(':', 1)[1].strip()
+
+        # When a new cell is detected, save the previous device and create a new one
+        if line.startswith('Cell'):
+            if 'mac' in device:
+                device['device_type'] = p.get_manuf(device.get('mac', ''))
+                devices[device['mac']] = device
             device = {}
-            for i in range(index, len(lines)):
-                for key, regex in regexes.items():
-                    match = regex.search(lines[i])
-                    if match:
-                        device[key] = match.group(1)
 
-                if 'encryption_type' in device and device['encryption_type'] not in device['encryption']:
-                    device['encryption'] += ', ' + device['encryption_type']
-
-                if 'mac' in device and device['mac'] not in devices:  # if the device MAC is not in the devices dictionary
-                    device['device_type'] = p.get_manuf(device.get('mac', ''))
-                    devices[device['mac']] = device
-
+    # Don't forget to add the last device
+    if 'mac' in device:
+        device['device_type'] = p.get_manuf(device.get('mac', ''))
+        devices[device['mac']] = device
+    
     return list(devices.values())
 
 
