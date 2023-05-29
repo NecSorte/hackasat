@@ -22,8 +22,9 @@ except:
 
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
-    interfaces = result.split('\n')
-    return [iface.strip(" :") for iface in interfaces if iface]
+    interfaces = set(result.split('\n'))
+    interfaces.discard('')  # Remove any empty strings
+    return list(interfaces)
 
 def get_serial_ports():
     ports = [f'/dev/{dev}' for dev in os.listdir('/dev') if dev.startswith('ttyACM') or dev.startswith('ttyUSB')]
@@ -99,19 +100,7 @@ def parse_wifi_scan_output(output):
     for index, line in enumerate(lines):
         if "Address" in line:
             mac = line.split()[-1]
-            if mac in devices:
-                # Device already added, update the information
-                device_data = devices[mac]
-                device_data["essid"] = extract_value(lines, index, "ESSID:\"(.*)\"")
-                device_data["mode"] = extract_value(lines, index, "Mode:(.*)")
-                device_data["channel"] = extract_value(lines, index, "Channel:(.*)")
-                device_data["frequency"] = extract_value(lines, index, "Frequency:(.*)")
-                device_data["quality"] = extract_value(lines, index, "Quality=(.*)")
-                device_data["signal"] = extract_value(lines, index, "Signal level=(.*)")
-                device_data["noise"] = extract_value(lines, index, "Noise level=(.*)")
-                device_data["encryption"] = extract_value(lines, index, "Encryption key:(.*)")
-                devices[mac] = device_data
-            else:
+            if mac not in devices:  # Check if device already exists
                 device_data = {
                     "mac": mac,
                     "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
