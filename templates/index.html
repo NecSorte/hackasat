@@ -185,26 +185,29 @@ $(document).ready(function() {
         });
     }
 
-    function populateWifiDetailsTable(scanResults) {
-        var tableBody = $('#wifi-details-table tbody');
-        tableBody.empty();
+    function populateWifiDetailsTable(devices) {
+        // Clear the table
+        $('#wifi-details tbody').empty();
 
-        scanResults.forEach(function(device) {
-            var row = $('<tr>');
-            row.append($('<td>').text(device.mac));
-            row.append($('<td>').text(device.essid));
-            row.append($('<td>').text(device.mode));
-            row.append($('<td>').text(device.channel));
-            row.append($('<td>').text(device.frequency));
-            row.append($('<td>').text(device.quality));
-            row.append($('<td>').text(device.signal));
-            row.append($('<td>').text(device.noise));
-            row.append($('<td>').text(device.encryption));
+        // Add a row for each device
+        devices.forEach(function(device) {
+            const row = `<tr>
+                <td>${device.mac}</td>
+                <td>${device.essid}</td>
+                <td>${device.mode}</td>
+                <td>${device.channel}</td>
+                <td>${device.frequency}</td>
+                <td>${device.quality}</td>
+                <td>${device.signal}</td>
+                <td>${device.noise}</td>
+                <td>${device.encryption}</td>
+                <td>${device.device_type}</td>
+            </tr>`;
 
-            tableBody.append(row);
+            $('#wifi-details tbody').append(row);
         });
     }
-
+    
 });
 </script>
 </body>
