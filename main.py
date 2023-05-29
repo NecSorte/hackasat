@@ -95,7 +95,7 @@ def parse_wifi_scan_output(output):
     lines = output.split('\n')
 
     p = manuf.MacParser()
-    
+
     regexes = {
         'mac': re.compile(r'Address: (.*)'),
         'essid': re.compile(r'ESSID:"(.*)"'),
@@ -107,6 +107,15 @@ def parse_wifi_scan_output(output):
         'noise': re.compile(r'Noise level=(\-?\d+) dBm')
     }
 
+    encryption_regexes = {
+        'WEP': re.compile(r'Encryption key:on'),
+        'WPA': re.compile(r'IE: WPA Version 1'),
+        'WPA2': re.compile(r'IE: IEEE 802.11i/WPA2 Version 1'),
+        'WPA2 Enterprise': re.compile(r'IE: IEEE 802.11i/WPA2 Version 1\n.*Authentication Suites \(1\) : 802\.1x'),
+        'WPA3': re.compile(r'IE: IEEE 802.11i/WPA2 Version 3'),
+        'WPA Enterprise': re.compile(r'IE: WPA Version \d+\n.*Authentication Suites \(1\) : 802\.1x'),
+    }
+
     device = {}
     for line in lines:
         for key, regex in regexes.items():
@@ -114,18 +123,13 @@ def parse_wifi_scan_output(output):
             if match:
                 device[key] = match.group(1)
 
-        if 'Encryption key' in line:
-            encryption = line.split(':')[1]
-            if 'encryption' in device:
-                device['encryption'] += '; ' + encryption
-            else:
-                device['encryption'] = encryption
-                
-        if 'IE: ' in line:
-            if 'encryption' in device:
-                device['encryption'] += '; ' + line.split(':', 1)[1].strip()
-            else:
-                device['encryption'] = line.split(':', 1)[1].strip()
+        if 'Encryption key:off' in line:
+            device['encryption'] = 'Open'
+        else:
+            for enc_type, regex in encryption_regexes.items():
+                if regex.search(output):
+                    device['encryption'] = enc_type
+                    break
 
         # When a new cell is detected, save the previous device and create a new one
         if line.startswith('Cell'):
@@ -138,8 +142,9 @@ def parse_wifi_scan_output(output):
     if 'mac' in device:
         device['device_type'] = p.get_manuf(device.get('mac', ''))
         devices[device['mac']] = device
-    
+
     return list(devices.values())
+
 
 
 @app.route('/array_scan', methods=['POST'])
