@@ -95,30 +95,31 @@ def parse_wifi_scan_output(output):
 
     p = manuf.MacParser()
     
+    regexes = {
+        'mac': re.compile(r'Address: (.*)'),
+        'essid': re.compile(r'ESSID:"(.*)"'),
+        'mode': re.compile(r'Mode:(.*)'),
+        'channel': re.compile(r'Channel:(\d+)'),
+        'frequency': re.compile(r'Frequency:(\d+\.\d+) GHz'),
+        'quality': re.compile(r'Quality=(\d+)/\d+'),
+        'signal': re.compile(r'Signal level=(\-?\d+) dBm'),
+        'encryption': re.compile(r'Encryption key:(.*)')
+    }
+
     for index, line in enumerate(lines):
-        if "Address" in line:
-            mac = line.split()[-1]
-            ssid = essid = ""
-
-            for i in range(index + 1, len(lines)):
-                if "ESSID" in lines[i]:
-                    essid = lines[i].split('"')[1]
-                    break
-
-            for i in range(index + 1, len(lines)):
-                if "Quality" in lines[i]:
-                    ssid = lines[i].split()[-1]
-                    break
-
-            device_type = p.get_manuf(mac)
-            devices.append({
-                "mac": mac,
-                "ssid": ssid,
-                "essid": essid,
-                "device_type": device_type
-            })
+        if "Cell" in line:
+            device = {}
+            for i in range(index, len(lines)):
+                for key, regex in regexes.items():
+                    match = regex.search(lines[i])
+                    if match:
+                        device[key] = match.group(1)
+                if device:  # if the device dictionary is not empty
+                    device['device_type'] = p.get_manuf(device.get('mac', ''))
+                    devices.append(device)
 
     return devices
+
 
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
