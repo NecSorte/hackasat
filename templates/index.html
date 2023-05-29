@@ -176,16 +176,27 @@ $(document).ready(function() {
         }
     });
 
-    var allDevices = [];  // Array to accumulate all devices
+var allDevices = [];  // Array to accumulate all devices
 
-    // Define the function to perform a wifi scan
-    function wifiScan() {
-        $.post('/wifi_scan', {
-            interface: $('#interface-selector').val()
-        }, function(data) {
-               populateWifiDetailsTable(uniqueDevices);
-        });
-    }
+// Define the function to perform a wifi scan
+function wifiScan() {
+    // Call the /wifi_scan endpoint
+    $.post('/wifi_scan', {
+        interface: $('#interface-selector').val()
+    }, function(data) {
+        if(data && data.devices) { // Check if devices array exists in response
+            // Merge new devices with previously found devices
+            allDevices = [...allDevices, ...data.devices];
+
+            // Eliminate duplicates
+            const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
+            
+            populateWifiDetailsTable(uniqueDevices);
+        }
+    }).fail(function() {
+        console.log('Failed to retrieve devices');
+    });
+}
 
     function populateWifiDetailsTable(devices) {
         // Clear the table
