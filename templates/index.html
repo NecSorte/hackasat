@@ -40,24 +40,20 @@
                 <thead>
                     <tr>
                         <th>MAC Address</th>
-                        <th>frequency</th>
-                        <th>rate</th>
-                        <th>keys</th>
-                        <th>power</th>
-                        <th>txpower</th>
-                        <th>retry</th>
-                        <th>event</th>
-                        <th>auth</th>
-                        <th>wpakeys</th>
-                        <th>genie</th>
-                        <th>modulation</th>
+                        <th>ESSID</th>
+                        <th>Mode</th>
+                        <th>Channel</th>
+                        <th>Frequency</th>
+                        <th>Quality</th>
+                        <th>Signal Level</th>
+                        <th>Noise Level</th>
+                        <th>Encryption</th>
                     </tr>
                 </thead>
                 <tbody>
                 </tbody>
             </table>
         </div>
-    </div>
 
 
 <script>
@@ -197,12 +193,13 @@ $(document).ready(function() {
             var row = $('<tr>');
             row.append($('<td>').text(device.mac));
             row.append($('<td>').text(device.essid));
-            row.append($('<td>').text(device.protocol));
             row.append($('<td>').text(device.mode));
+            row.append($('<td>').text(device.channel));
             row.append($('<td>').text(device.frequency));
-            row.append($('<td>').text(device.encryption));
-            row.append($('<td>').text(device.rate));
+            row.append($('<td>').text(device.quality));
             row.append($('<td>').text(device.signal));
+            row.append($('<td>').text(device.noise));
+            row.append($('<td>').text(device.encryption));
 
             tableBody.append(row);
         });
