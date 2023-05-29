@@ -100,7 +100,7 @@ def parse_wifi_scan_output(output):
     for index, line in enumerate(lines):
         if "Address" in line:
             mac = line.split()[-1]
-            if mac in devices:  # Skip if device already added
+            if mac in devices:
                 continue
 
             device_data = {
@@ -113,7 +113,7 @@ def parse_wifi_scan_output(output):
                 "signal": extract_value(lines, index, "Signal level=(.*)"),
                 "noise": extract_value(lines, index, "Noise level=(.*)"),
                 "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": p.get_manuf(mac)
+                "device_type": p.get_manuf(mac) if p.get_manuf(mac) else None
             }
 
             devices[mac] = device_data
