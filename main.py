@@ -100,22 +100,26 @@ def parse_wifi_scan_output(output):
     for index, line in enumerate(lines):
         if "Address" in line:
             mac = line.split()[-1]
-            if mac not in devices:  # Check if device already exists
-                device_data = {
-                    "mac": mac,
-                    "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                    "mode": extract_value(lines, index, "Mode:(.*)"),
-                    "channel": extract_value(lines, index, "Channel:(.*)"),
-                    "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                    "quality": extract_value(lines, index, "Quality=(.*)"),
-                    "signal": extract_value(lines, index, "Signal level=(.*)"),
-                    "noise": extract_value(lines, index, "Noise level=(.*)"),
-                    "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                    "device_type": p.get_manuf(mac).split(', ')[0] if p.get_manuf(mac) else None
-                }
-                devices[mac] = device_data
+            if mac in devices:  # Skip if device already added
+                continue
+
+            device_data = {
+                "mac": mac,
+                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
+                "mode": extract_value(lines, index, "Mode:(.*)"),
+                "channel": extract_value(lines, index, "Channel:(.*)"),
+                "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                "quality": extract_value(lines, index, "Quality=(.*)"),
+                "signal": extract_value(lines, index, "Signal level=(.*)"),
+                "noise": extract_value(lines, index, "Noise level=(.*)"),
+                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                "device_type": p.get_manuf(mac).split(', ')[0] if p.get_manuf(mac) else None
+            }
+
+            devices[mac] = device_data
 
     return devices
+
 
 def extract_value(lines, start_index, pattern):
     regex = re.compile(pattern)
