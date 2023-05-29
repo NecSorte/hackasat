@@ -99,23 +99,32 @@ def parse_wifi_scan_output(output):
     for index, line in enumerate(lines):
         if "Address" in line:
             mac = line.split()[-1]
-            if mac in devices:  # Skip if device already added
-                continue
-
-            device_data = {
-                "mac": mac,
-                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Mode:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Quality=(.*)"),
-                "signal": extract_value(lines, index, "Signal level=(.*)"),
-                "noise": extract_value(lines, index, "Noise level=(.*)"),
-                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": p.get_manuf(mac)
-            }
-
-            devices[mac] = device_data
+            if mac in devices:
+                # Device already added, update the information
+                device_data = devices[mac]
+                device_data["essid"] = extract_value(lines, index, "ESSID:\"(.*)\"")
+                device_data["mode"] = extract_value(lines, index, "Mode:(.*)")
+                device_data["channel"] = extract_value(lines, index, "Channel:(.*)")
+                device_data["frequency"] = extract_value(lines, index, "Frequency:(.*)")
+                device_data["quality"] = extract_value(lines, index, "Quality=(.*)")
+                device_data["signal"] = extract_value(lines, index, "Signal level=(.*)")
+                device_data["noise"] = extract_value(lines, index, "Noise level=(.*)")
+                device_data["encryption"] = extract_value(lines, index, "Encryption key:(.*)")
+                devices[mac] = device_data
+            else:
+                device_data = {
+                    "mac": mac,
+                    "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
+                    "mode": extract_value(lines, index, "Mode:(.*)"),
+                    "channel": extract_value(lines, index, "Channel:(.*)"),
+                    "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                    "quality": extract_value(lines, index, "Quality=(.*)"),
+                    "signal": extract_value(lines, index, "Signal level=(.*)"),
+                    "noise": extract_value(lines, index, "Noise level=(.*)"),
+                    "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                    "device_type": p.get_manuf(mac).split(', ')[0] if p.get_manuf(mac) else None
+                }
+                devices[mac] = device_data
 
     return devices
 
