@@ -222,7 +222,7 @@ function populateWifiDetailsTable(devices) {
             <td>${device.signal}</td>
             <td>${device.noise}</td>
             <td>${device.encryption}</td>
-            <td>${device.device_type}</td>
+            <td>${device.device_type || ''}</td>
         </tr>`;
         tbody.append(row);
     });
