@@ -113,12 +113,13 @@ def parse_wifi_scan_output(output):
                 "signal": extract_value(lines, index, "Signal level=(.*)"),
                 "noise": extract_value(lines, index, "Noise level=(.*)"),
                 "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": p.get_manuf(mac).split(', ')[0] if p.get_manuf(mac) else None
+                "device_type": p.get_manuf(mac)
             }
 
             devices[mac] = device_data
 
     return devices
+
 
 
 def extract_value(lines, start_index, pattern):
