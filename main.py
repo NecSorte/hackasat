@@ -5,6 +5,7 @@ import json
 import serial
 import datetime
 import subprocess
+import re
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
@@ -90,7 +91,7 @@ def handle_wifi_scan():
     return jsonify(devices=devices)
 
 def parse_wifi_scan_output(output):
-    devices = []
+    devices = {}
     lines = output.split('\n')
 
     p = manuf.MacParser()
@@ -103,7 +104,8 @@ def parse_wifi_scan_output(output):
         'frequency': re.compile(r'Frequency:(\d+\.\d+) GHz'),
         'quality': re.compile(r'Quality=(\d+)/\d+'),
         'signal': re.compile(r'Signal level=(\-?\d+) dBm'),
-        'encryption': re.compile(r'Encryption key:(.*)')
+        'encryption': re.compile(r'Encryption key:(.*)'),
+        'encryption_type': re.compile(r'IE: (WPA2?|WEP)')
     }
 
     for index, line in enumerate(lines):
@@ -114,11 +116,15 @@ def parse_wifi_scan_output(output):
                     match = regex.search(lines[i])
                     if match:
                         device[key] = match.group(1)
-                if device:  # if the device dictionary is not empty
-                    device['device_type'] = p.get_manuf(device.get('mac', ''))
-                    devices.append(device)
 
-    return devices
+                if 'encryption_type' in device and device['encryption_type'] not in device['encryption']:
+                    device['encryption'] += ', ' + device['encryption_type']
+
+                if 'mac' in device and device['mac'] not in devices:  # if the device MAC is not in the devices dictionary
+                    device['device_type'] = p.get_manuf(device.get('mac', ''))
+                    devices[device['mac']] = device
+
+    return list(devices.values())
 
 
 @app.route('/array_scan', methods=['POST'])
