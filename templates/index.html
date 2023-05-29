@@ -181,6 +181,7 @@ $(document).ready(function() {
         $.post('/wifi_scan', {
             interface: $('#interface-selector').val()
         }, function(data) {
+            console.log(data); // Log data to console
             populateWifiDetailsTable(data.devices);
         });
     }
