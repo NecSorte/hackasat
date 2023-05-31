@@ -144,12 +144,14 @@ def handle_array_scan():
     elev_max = 1401
     step = 500
 
+    direction = 1
     for azim in range(azim_min, azim_max + 1, step):
         command = f'azim {azim}'
         send_command(ser, command)
-        for elev in range(elev_min, elev_max + 1, step):
+        for elev in range(elev_min, elev_max + 1, step*direction):
             command = f'elev {elev}'
             send_command(ser, command)
+        direction *= -1
 
     ser.close()
     return jsonify(success=True)
