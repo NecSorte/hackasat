@@ -144,19 +144,16 @@ def handle_array_scan():
     elev_max = 1401
     step = 500
 
-    azim_elev_values = []
-
     for azim in range(azim_min, azim_max + 1, step):
-        command = f'G1 X{azim}'
+        command = f'azim {azim}'
         send_command(ser, command)
-        azim_elev_values.append(f'azim {azim}')
         for elev in range(elev_min, elev_max + 1, step):
-            command = f'G1 Y{elev}'
+            command = f'elev {elev}'
             send_command(ser, command)
-            azim_elev_values.append(f'elev {elev}')
 
     ser.close()
-    return jsonify(success=True, values=azim_elev_values)
+    return jsonify(success=True)
+
 
 
 if __name__ == '__main__':
