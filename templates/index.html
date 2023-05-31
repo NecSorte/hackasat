@@ -39,6 +39,7 @@
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Actions</th>
                         <th>MAC Address</th>
                         <th>ESSID</th>
                         <th>Mode</th>
@@ -109,8 +110,11 @@ $(document).ready(function() {
         $.post('/send_command', {
             port: $('#port-selector').val(),
             command: $('#command-input').val()
-        }, function(data) {
+        }).done(function(data) {
             $('#command-response').text(data.response);
+        }).fail(function() {
+            // handle error here
+            console.log('Error: Unable to send command');
         });
     });
 
@@ -138,9 +142,14 @@ $(document).ready(function() {
             arrayScan();
         } else {
             $(this).text('Start Array Scan').addClass('btn-primary').removeClass('btn-danger');
-            // You would also need to figure out how to stop the arrayScan function once it's been started
+            // Clear the timeout for the arrayScan function
+            clearTimeout(arrayScanTimeoutId);
+            // Reset currentAzimuth and currentElevation values
+            currentAzimuth = AZIMUTH_START;
+            currentElevation = ELEVATION_START;
         }
     });
+
 
     // Define the arrayScan timeout ID outside the arrayScan function
     var arrayScanTimeoutId = null;
