@@ -53,7 +53,27 @@
                 </thead>
 
                 <tbody>
+                    {% for device in devices %}
+                    <tr>
+                        <td>
+                            <button class="btn btn-primary track-button">Track</button>
+                            <button class="btn btn-danger crack-button">Crack</button>
+                            <button class="btn btn-warning ea-button">EA</button>
+                        </td>
+                        <td>{{ device.mac }}</td>
+                        <td>{{ device.essid }}</td>
+                        <td>{{ device.mode }}</td>
+                        <td>{{ device.channel }}</td>
+                        <td>{{ device.frequency }}</td>
+                        <td>{{ device.quality }}</td>
+                        <td>{{ device.signal }}</td>
+                        <td>{{ device.noise }}</td>
+                        <td>{{ device.encryption }}</td>
+                        <td>{{ device.device_type or '' }}</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
+
             </table>
         </div>
 
@@ -177,7 +197,20 @@ $(document).ready(function() {
             }
         }
     });
+    $('#wifi-details-table').on('click', '.track-button', function() {
+        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+        console.log(`Tracking ${macAddress}`);
+    });
 
+    $('#wifi-details-table').on('click', '.crack-button', function() {
+        const essid = $(this).closest('tr').find('td:nth-child(3)').text();
+        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+        console.log(`Beginning to crack: ESSID: ${essid}, MAC: ${macAddress}`);
+    });
+
+    $('#wifi-details-table').on('click', '.ea-button', function() {
+        console.log('Conducting electronic attack');
+    });
 var allDevices = [];  // Array to accumulate all devices
 
 // Define the function to perform a wifi scan
