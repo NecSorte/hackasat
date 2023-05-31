@@ -39,6 +39,7 @@
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Actions</th>
                         <th>MAC Address</th>
                         <th>ESSID</th>
                         <th>Mode</th>
@@ -252,28 +253,40 @@ function populateWifiDetailsTable(devices) {
 function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
 
-    sortedDevices.sort(function (a, b) {
-        const valueA = a[sortColumn];
-        const valueB = b[sortColumn];
-
-        if (valueA == null || valueA === undefined) {
-            return sortDirection === 'asc' ? -1 : 1;
-        } else if (valueB == null || valueB === undefined) {
-            return sortDirection === 'asc' ? 1 : -1;
-        }
-
-        const lowerCaseA = valueA.toString().toLowerCase();
-        const lowerCaseB = valueB.toString().toLowerCase();
-
-        if (lowerCaseA < lowerCaseB) {
-            return sortDirection === 'asc' ? -1 : 1;
-        } else if (lowerCaseA > lowerCaseB) {
-            return sortDirection === 'asc' ? 1 : -1;
-        } else {
-            return 0;
-        }
+sortedDevices.forEach(function (device) {
+        const row = `<tr>
+            <td>
+                <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
+                <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
+                <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
+            </td>
+            <td>${device.mac}</td>
+            <td>${device.essid}</td>
+            <td>${device.mode}</td>
+            <td>${device.channel}</td>
+            <td>${device.frequency}</td>
+            <td>${device.quality}</td>
+            <td>${device.signal}</td>
+            <td>${device.noise}</td>
+            <td>${device.encryption}</td>
+            <td>${device.device_type || ''}</td>
+        </tr>`;
+        tbody.append(row);
+    });
+    
+        $('.track-button').click(function() {
+        console.log('Tracking: ' + $(this).data('mac'));
     });
 
+    $('.crack-button').click(function() {
+        console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
+    });
+
+    $('.ea-button').click(function() {
+        console.log('Conducting electronic attack on: ' + $(this).data('mac'));
+    });
+}
+    
     return sortedDevices;
 }
 
