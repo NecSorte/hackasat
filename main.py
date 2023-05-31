@@ -133,6 +133,8 @@ def extract_value(lines, start_index, pattern):
 
 
 
+import time
+
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
@@ -148,13 +150,21 @@ def handle_array_scan():
     for azim in range(azim_min, azim_max + 1, step):
         command = f'azim {azim}'
         send_command(ser, command)
-        for elev in range(elev_min, elev_max + 1, step*direction):
+        time.sleep(1)  # Pause for one second
+
+        elev_values = list(range(elev_min, elev_max + 1, step))
+        if direction == -1:
+            elev_values = elev_values[::-1]  # Reverse the order of the elevations
+        for elev in elev_values:
             command = f'elev {elev}'
             send_command(ser, command)
+            time.sleep(1)  # Pause for one second
+        
         direction *= -1
 
     ser.close()
     return jsonify(success=True)
+
 
 
 
