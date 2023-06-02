@@ -14,6 +14,14 @@ from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
+hasOUILookup = False
+
+try:
+    from manuf import manuf
+    hasOUILookup = True
+except:
+    hasOUILookup = False
+
 ELK_LOGSTASH_URL = 'http://localhost:5044'  # Replace with your Logstash URL
 
 def get_network_interfaces():
