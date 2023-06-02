@@ -6,6 +6,8 @@ import serial
 import datetime
 import subprocess
 import re
+import threading
+import math
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
@@ -36,6 +38,69 @@ def send_command(ser, command):
         time.sleep(0.01)
     ser.write(b'\r\n')
 
+# Shared variable for controlling tracking thread
+should_stop = False
+
+# Function to extract signal strength from iwlist output
+def parse_signal_strength(output):
+    m = re.search('Signal level=(-?\d+)', output)
+    return int(m.group(1)) if m else None
+
+# Function to get the new position of the antenna based on the current signal strength
+def adjust_antenna(current_signal_strength):
+    # These values would need to be determined based on your specific antenna and environment
+    min_signal_strength = -100
+    max_signal_strength = 0
+    min_azimuth = 160
+    max_azimuth = 6400
+    min_elevation = 650
+    max_elevation = 1400
+
+    # Normalize the signal strength to a value between 0 and 1
+    normalized_strength = (current_signal_strength - min_signal_strength) / (max_signal_strength - min_signal_strength)
+
+    # Determine the new azimuth and elevation based on the normalized signal strength
+    new_azimuth = min_azimuth + normalized_strength * (max_azimuth - min_azimuth)
+    new_elevation = min_elevation + math.sqrt(normalized_strength) * (max_elevation - min_elevation)
+
+    return new_azimuth, new_elevation
+# Function to continuously track a device
+def track_device(mac_address, interface='wlan0'):
+    global should_stop
+       while not should_stop:
+        # Use iwlist to get the current signal strength
+        output = os.popen(f"iwlist {interface} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
+        current_signal_strength = parse_signal_strength(output)
+
+        # Adjust the antenna based on the current signal strength
+        new_azimuth, new_elevation = adjust_antenna(current_signal_strength)
+
+        # Send the new azimuth and elevation to the antenna
+        ser.write(f"azim {new_azimuth}\n")
+        ser.write(f"elev {new_elevation}\n")
+
+        # Wait for a bit before checking again
+        time.sleep(1)
+
+# Route to start tracking
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form['mac_address']
+    threading.Thread(target=track_device, args=(mac_address,)).start()
+    return jsonify(success=True)
+
+# Route to stop tracking
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
+    should_stop = True
+    return jsonify(success=True)
+
+if __name__ == "__main__":
+    app.run(debug=True)
+    
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
