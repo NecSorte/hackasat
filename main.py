@@ -8,19 +8,13 @@ import subprocess
 import re
 import threading
 import math
+import requests
 
 from flask import Flask, render_template, request, jsonify
-from manuf import manuf
 
 app = Flask(__name__)
 
-hasOUILookup = False
-
-try:
-    from manuf import manuf
-    hasOUILookup = True
-except:
-    hasOUILookup = False
+ELK_LOGSTASH_URL = 'http://localhost:5044'  # Replace with your Logstash URL
 
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
@@ -64,6 +58,7 @@ def adjust_antenna(current_signal_strength):
     new_elevation = min_elevation + math.sqrt(normalized_strength) * (max_elevation - min_elevation)
 
     return new_azimuth, new_elevation
+
 # Function to continuously track a device
 def track_device(mac_address, interface='wlan0'):
     global should_stop
@@ -97,7 +92,7 @@ def stop_tracking():
     global should_stop
     should_stop = True
     return jsonify(success=True)
-    
+
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
@@ -105,12 +100,10 @@ def get_serial_ports_endpoint():
 @app.route('/get_network_interfaces', methods=['GET'])
 def get_network_interfaces_endpoint():
     return jsonify(get_network_interfaces())
-    
+
 @app.route('/')
 def index():
-    serial_ports = get_serial_ports()
-    network_interfaces = get_network_interfaces()
-    return render_template('index.html', serial_ports=serial_ports, network_interfaces=network_interfaces)
+    return render_template('index.html')
 
 @app.route('/send_command', methods=['POST'])
 def handle_send_command():
@@ -151,13 +144,12 @@ def handle_wifi_scan():
     interface = request.form['interface']
     output = os.popen(f'sudo iwlist {interface} scan').read()
     devices = parse_wifi_scan_output(output)
+    send_devices_to_logstash(devices)
     return jsonify(devices=list(devices.values()))
 
 def parse_wifi_scan_output(output):
     devices = {}
     lines = output.split('\n')
-
-    p = manuf.MacParser()
 
     for index, line in enumerate(lines):
         if "Address" in line:
@@ -175,14 +167,11 @@ def parse_wifi_scan_output(output):
                 "signal": extract_value(lines, index, "Signal level=(.*)"),
                 "noise": extract_value(lines, index, "Noise level=(.*)"),
                 "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": p.get_manuf(mac) if p.get_manuf(mac) else None
             }
 
             devices[mac] = device_data
 
     return devices
-
-
 
 def extract_value(lines, start_index, pattern):
     regex = re.compile(pattern)
@@ -192,38 +181,10 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
-@app.route('/array_scan', methods=['POST'])
-def handle_array_scan():
-    port = request.form['port']
-    ser = serial.Serial(port, 9600, timeout=1)
-    
-    azim_min = 170
-    azim_max = 6301
-    elev_min = 650
-    elev_max = 1401
-    step = 500
-
-    direction = 1
-    for azim in range(azim_min, azim_max + 1, step):
-        command = f'azim {azim}'
-        send_command(ser, command)
-        time.sleep(2)  # Pause for two seconds
-
-        elev_values = list(range(elev_min, elev_max + 1, step))
-        if direction == -1:
-            elev_values = elev_values[::-1]  # Reverse the order of the elevations
-        for elev in elev_values:
-            command = f'elev {elev}'
-            send_command(ser, command)
-            time.sleep(2)  # Pause for two seconds
-        
-        direction *= -1
-
-    ser.close()
-    return jsonify(success=True)
-
-
-
+def send_devices_to_logstash(devices):
+    headers = {'Content-Type': 'application/json'}
+    for device in devices.values():
+        requests.post(ELK_LOGSTASH_URL, json=device, headers=headers)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
