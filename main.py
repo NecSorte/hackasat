@@ -97,9 +97,6 @@ def stop_tracking():
     global should_stop
     should_stop = True
     return jsonify(success=True)
-
-if __name__ == "__main__":
-    app.run(debug=True)
     
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
