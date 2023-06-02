@@ -205,6 +205,8 @@ $(document).ready(function() {
             }
         }
     });
+    
+    
     $('#wifi-details-table').on('click', '.track-button', function() {
         const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
         console.log(`Tracking ${macAddress}`);
@@ -267,7 +269,26 @@ function populateWifiDetailsTable(devices) {
         </tr>`;
         tbody.append(row);
     });
-
+    
+    $(".track-button").click(function() {
+    var $this = $(this);
+    if ($this.text() == "Track") {
+        // Start tracking
+        $this.text("Stop Tracking");
+        $this.addClass("btn-danger");
+        $(".track-button").not($this).prop("disabled", true);
+        var mac_address = $this.data("mac-address");
+        $.post("/track_device", {mac_address: mac_address});
+    } else {
+        // Stop tracking
+        $this.text("Track");
+        $this.removeClass("btn-danger");
+        $(".track-button").prop("disabled", false);
+        $.post("/stop_tracking");
+    }
+});
+    
+    
     // Add click event listeners to column headers for sorting
     $('#wifi-details-table th').click(function () {
         const column = $(this).data('column');
