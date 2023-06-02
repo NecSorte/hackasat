@@ -67,7 +67,7 @@ def adjust_antenna(current_signal_strength):
 # Function to continuously track a device
 def track_device(mac_address, interface='wlan0'):
     global should_stop
-       while not should_stop:
+    while not should_stop:
         # Use iwlist to get the current signal strength
         output = os.popen(f"iwlist {interface} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
         current_signal_strength = parse_signal_strength(output)
