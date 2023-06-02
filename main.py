@@ -147,52 +147,60 @@ def handle_start_scan():
     ser.close()
     return jsonify(success=True)
 
+
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     interface = request.form['interface']
-    output = os.popen(f'sudo iwlist {interface} scan').read()
+    output = subprocess.check_output(['iw', 'dev', interface, 'scan'], universal_newlines=True)
+
     devices = parse_wifi_scan_output(output)
-    send_devices_to_logstash(devices)
-    return jsonify(devices=list(devices.values()))
+    send_data_to_logstash(devices)
+    
+    return jsonify(success=True)
 
 def parse_wifi_scan_output(output):
-    devices = {}
+    devices = []
     lines = output.split('\n')
 
-    for index, line in enumerate(lines):
+    for line in lines:
         if "Address" in line:
             mac = line.split()[-1]
-            if mac in devices:
-                continue
-
             device_data = {
                 "mac": mac,
-                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Mode:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Quality=(.*)"),
-                "signal": extract_value(lines, index, "Signal level=(.*)"),
-                "noise": extract_value(lines, index, "Noise level=(.*)"),
-                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                "essid": extract_value(lines, line, "ESSID:\"(.*)\""),
+                "mode": extract_value(lines, line, "Mode:(.*)"),
+                "channel": extract_value(lines, line, "Channel:(.*)"),
+                "frequency": extract_value(lines, line, "Frequency:(.*)"),
+                "quality": extract_value(lines, line, "Quality=(.*)"),
+                "signal": extract_value(lines, line, "Signal level=(.*)"),
+                "noise": extract_value(lines, line, "Noise level=(.*)"),
             }
-
-            devices[mac] = device_data
+            devices.append(device_data)
 
     return devices
 
-def extract_value(lines, start_index, pattern):
-    regex = re.compile(pattern)
-    for i in range(start_index + 1, len(lines)):
-        match = regex.search(lines[i])
-        if match:
-            return match.group(1)
+def extract_value(lines, line, pattern):
+    for i, l in enumerate(lines):
+        if l == line:
+            for j in range(i+1, len(lines)):
+                match = re.search(pattern, lines[j])
+                if match:
+                    return match.group(1)
     return None
 
-def send_devices_to_logstash(devices):
+def send_data_to_logstash(data):
     headers = {'Content-Type': 'application/json'}
-    for device in devices.values():
-        requests.post(ELK_LOGSTASH_URL, json=device, headers=headers)
+    url = f"{ELK_LOGSTASH_URL}/wifi-devices"  # Replace 'wifi-devices' with your desired index name
+    try:
+        response = requests.post(url, json=data, headers=headers)
+        if response.status_code == 200:
+            print("WiFi data sent to Logstash successfully.")
+        else:
+            print("Failed to send WiFi data to Logstash.")
+    except requests.exceptions.RequestException as e:
+        print("An error occurred while sending WiFi data to Logstash:", str(e))
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
