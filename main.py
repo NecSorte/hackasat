@@ -130,9 +130,6 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
-
-
-
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
@@ -144,15 +141,27 @@ def handle_array_scan():
     elev_max = 1401
     step = 500
 
+    direction = 1
     for azim in range(azim_min, azim_max + 1, step):
-        command = f'G1 X{azim}'
+        command = f'azim {azim}'
         send_command(ser, command)
-        for elev in range(elev_min, elev_max + 1, step):
-            command = f'G1 Y{elev}'
+        time.sleep(2)  # Pause for two seconds
+
+        elev_values = list(range(elev_min, elev_max + 1, step))
+        if direction == -1:
+            elev_values = elev_values[::-1]  # Reverse the order of the elevations
+        for elev in elev_values:
+            command = f'elev {elev}'
             send_command(ser, command)
+            time.sleep(2)  # Pause for two seconds
+        
+        direction *= -1
 
     ser.close()
     return jsonify(success=True)
+
+
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
