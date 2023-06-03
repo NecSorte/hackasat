@@ -7,10 +7,8 @@ import datetime
 import subprocess
 import re
 import numpy as np
-import ray
-from ray import tune
-from ray.rllib import agents
-from pexpect import spawn, EOF
+from threading import Thread
+from queue import Queue
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
@@ -40,70 +38,82 @@ def send_command(ser, command):
         ser.write(char.encode())
         time.sleep(0.01)
     ser.write(b'\r\n')
-    
- # Constants
+
+# Constants
+INTERFACE = '{interface}'
 AZIMUTH_RANGE = (160, 6400)
 ELEVATION_RANGE = (650, 1450)
-MAC_ADDRESS = 'xx:xx:xx:xx:xx:xx'  # replace with the target MAC address
-INTERFACE = 'wlan0'  # replace with the actual interface
 
-class AntennaEnv(ray.rllib.env.MultiAgentEnv):
-    def __init__(self, config):
-        self.azim = np.random.randint(*AZIMUTH_RANGE)
-        self.elev = np.random.randint(*ELEVATION_RANGE)
-        self.signal_strength = self.get_signal_strength()
-        self.command_child = spawn('bash')
-        self.command_child.expect(EOF)
+# Q-Learning parameters
+alpha = 0.5
+gamma = 0.95
+epsilon = 0.1
+state_space = 10
+action_space = 4
+q_table = np.zeros((state_space, action_space))
 
-    def get_signal_strength(self):
-        os.system(f"iwlist {INTERFACE} scan | grep -A 5 -B 5 '{MAC_ADDRESS}' > scan.txt")
-        with open("scan.txt") as f:
-            for line in f:
-                if "Quality" in line:
-                    # assuming signal quality format as 'Quality=XX/100'
-                    return int(line.split("=")[1].split('/')[0])
-        return 0
+# Global state
+current_state = 0
+should_stop = False
 
-    def set_antenna(self, azim, elev):
-        self.command_child.sendline(f'/send_commands azim {azim}')
-        self.command_child.sendline(f'/send_commands elev {elev}')
-        self.command_child.expect(EOF)
+app = Flask(__name__)
 
-    def reset(self):
-        self.azim = np.random.randint(*AZIMUTH_RANGE)
-        self.elev = np.random.randint(*ELEVATION_RANGE)
-        self.set_antenna(self.azim, self.elev)
-        self.signal_strength = self.get_signal_strength()
-        return [self.azim, self.elev, self.signal_strength]
+# Function to extract signal strength from iwlist output
+def parse_signal_strength(output):
+    m = re.search('Signal level=(-?\d+)', output)
+    return int(m.group(1)) if m else None
 
-    def step(self, action):
-        self.azim += action[0]
-        self.elev += action[1]
-        self.set_antenna(self.azim, self.elev)
-        time.sleep(1)  # wait for antenna to set and for scanning
+# Function to get the new position of the antenna based on the current state and action
+def adjust_antenna(state, action):
+    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
+    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
+    if action % 2 == 1:
+        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    return azim, elev
 
-        new_signal_strength = self.get_signal_strength()
-        reward = new_signal_strength - self.signal_strength
-        self.signal_strength = new_signal_strength
+# Function to continuously track a device
+def track_device(mac_address):
+    global should_stop, current_state
+    while not should_stop:
+        # Choose action
+        if random.uniform(0, 1) < epsilon:
+            action = np.random.choice(action_space)  # Explore action space
+        else:
+            action = np.argmax(q_table[current_state])  # Exploit learned values
 
-        return [self.azim, self.elev, self.signal_strength], reward, False, {}
+        # Take action and get reward
+        azim, elev = adjust_antenna(current_state, action)
+        os.system(f"/send_commands azim {azim}")
+        os.system(f"/send_commands elev {elev}")
+        time.sleep(1)  # Wait for a bit before checking again
 
+        output = os.popen(f"iwlist {INTERFACE} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
+        new_signal_strength = parse_signal_strength(output)
+        reward = new_signal_strength if new_signal_strength else -100
 
-ray.init()
+        # Update Q-table
+        old_value = q_table[current_state, action]
+        next_max = np.max(q_table[current_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        q_table[current_state, action] = new_value
 
-trainer = agents.ppo.PPOTrainer(env=AntennaEnv, config={"framework": "torch"})
+        # Update current state
+        current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
-# Load from checkpoint if exists
-checkpoint_path = "./checkpoint"  # Put your desired checkpoint path here
-if os.path.exists(checkpoint_path):
-    trainer.restore(checkpoint_path)
+# Route to start tracking
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form['mac_address']
+    Thread(target=track_device, args=(mac_address,)).start()
+    return jsonify(success=True)
 
-# Training loop
-for i in range(10000):
-    trainer.train()
-    if i % 100 == 0:
-        checkpoint = trainer.save(checkpoint_path)
-        print(f"Checkpoint saved at {checkpoint}")
+# Route to stop tracking
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
 
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
