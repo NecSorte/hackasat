@@ -275,8 +275,17 @@ sortedDevices.forEach(function (device) {
     });
     
         $('.track-button').click(function() {
-        console.log('Tracking: ' + $(this).data('mac'));
+    var macAddress = $(this).data('mac');
+    // You would replace '/track_device' with the actual path to the Python script on your server
+    $.post('/track_device', {
+        mac: macAddress
+    }, function(data) {
+        // handle the response here
+        console.log(data);
+    }).fail(function() {
+        console.log('Failed to track device');
     });
+});
 
     $('.crack-button').click(function() {
         console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
