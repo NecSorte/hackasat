@@ -55,7 +55,7 @@ def get_known_devices():
     lock.acquire()
     try:
         # Do stuff with known_devices here
-        return known_devices.copy()
+        return get_known_devices().copy()  # Return a copy of the known_devices dictionary
     finally:
         # Always release the lock after we're done with it
         lock.release()
