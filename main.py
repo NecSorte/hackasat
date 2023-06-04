@@ -184,6 +184,8 @@ def handle_start_scan():
 def handle_wifi_scan():
     interface = request.form['interface']
     executor.submit(wifi_scan, interface)
+    output = os.popen(f'sudo iwlist {interface} scan').read()
+    devices = parse_wifi_scan_output(output)
     time.sleep(1)  # pause execution for 1 second
     return jsonify(devices=list(devices.values()))
 
