@@ -259,23 +259,34 @@ function wifiScan() {
 }
 
 function populateWifiDetailsTable(devices) {
-    // Clear the table body
-    const tbody = $('#wifi-details-table tbody');
-    tbody.empty();
+    var tableBody = $('#wifi-details-table tbody');
+    tableBody.empty();
 
     // Convert the devices list to a map with MAC addresses as keys
     const deviceMap = new Map();
     devices.forEach(device => deviceMap.set(device.mac, device));
 
     // Sort devices based on the clicked column
-    const sortColumn = tbody.data('sort-column');
-    const sortDirection = tbody.data('sort-direction');
-    const sortedDevices = sortDevices(Array.from(deviceMap.values()), sortColumn, sortDirection, tbody); // pass tbody as a parameter
+    const sortColumn = tableBody.data('sort-column');
+    const sortDirection = tableBody.data('sort-direction');
+    const sortedDevices = sortDevices(Array.from(deviceMap.values()), sortColumn, sortDirection);
 
     // Update the table body with sorted devices
-    appendDevicesToTableBody(sortedDevices, tbody);
-}
+    sortedDevices.forEach(device => {
+        var row = $('<tr>');
+        row.append($('<td>').text(device.mac));
+        row.append($('<td>').text(device.essid));
+        row.append($('<td>').text(device.signal));
+        row.append($('<td>').text(device.device_type));
+        row.append($('<td>').html('<button class="btn btn-primary btn-sm track-btn" data-mac="' + device.mac + '">Track</button>'));
+        tableBody.append(row);
+    });
 
+    $('.track-btn').click(function () {
+        var macAddress = $(this).data('mac');
+        trackDevice(macAddress); // Call the trackDevice function with the MAC address
+    });
+}
 function appendDevicesToTableBody(devices, tbody) {
     devices.forEach(function (device) {
         const row = `<tr>
