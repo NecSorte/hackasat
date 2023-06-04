@@ -8,6 +8,8 @@ import subprocess
 import re
 import threading
 
+import numpy as np
+from threading import Thread
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
 
@@ -137,10 +139,11 @@ def start_tracking():
     Thread(target=track_device, args=(mac_address,)).start()
     return jsonify(success=True)
 
-# Route to stop tracking
 @app.route('/stop_tracking', methods=['POST'])
 def stop_tracking():
     global should_stop
+    should_stop = True
+    return jsonify(success=True)
     
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
