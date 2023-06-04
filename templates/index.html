@@ -123,6 +123,24 @@ $(document).ready(function() {
         }
     });
 
+    $('.track-button').click(function() {
+    var macAddress = $(this).data('mac');
+    $.ajax({
+        type: 'POST',
+        url: '/track_device',
+        data: JSON.stringify({
+            'mac_address': macAddress
+        }),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(data) {
+            console.log(data);
+        },
+        error: function() {
+            console.log('Failed to track device');
+        }
+    });
+});
+    
     // Define the arrayScan timeout ID outside the arrayScan function
     var arrayScanTimeoutId = null;
 
@@ -285,23 +303,7 @@ function sortDevices(devices, sortColumn, sortDirection, tbody) { // receive tbo
         return sortedDevices;
 }
     
-$('.track-button').click(function() {
-    var macAddress = $(this).data('mac');
-    $.ajax({
-        type: 'POST',
-        url: '/track_device',
-        data: JSON.stringify({
-            'mac_address': macAddress
-        }),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(data) {
-            console.log(data);
-        },
-        error: function() {
-            console.log('Failed to track device');
-        }
-    });
-});
+
 
 $('.crack-button').click(function() {
     console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
