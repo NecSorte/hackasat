@@ -160,10 +160,14 @@ def handle_send_command():
     port = request.form['port']
     command = request.form['command']
     
-    ser = serial.Serial(port, 9600, timeout=1)
-    send_command(ser, command)
-    response = ser.read(1024).decode()
-    ser.close()
+    try:
+        ser = serial.Serial(port, 9600, timeout=1)
+        send_command(ser, command)
+        time.sleep(1) # add delay
+        response = ser.read(1024).decode()
+        ser.close()
+    except SerialException as e:
+        return jsonify(error=str(e)), 500
     
     return jsonify(response=response)
 
@@ -237,9 +241,37 @@ def extract_value(lines, start_index, pattern):
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
-    executor.submit(array_scan, port)
-    return jsonify(success=True)
+    
+    try:
+        ser = serial.Serial(port, 9600, timeout=1)
+    
+        azim_min = 170
+        azim_max = 6301
+        elev_min = 650
+        elev_max = 1401
+        step = 500
 
+        direction = 1
+        for azim in range(azim_min, azim_max + 1, step):
+            command = f'azim {azim}'
+            send_command(ser, command)
+            time.sleep(1)  # Pause for one second
+
+            elev_values = list(range(elev_min, elev_max + 1, step))
+            if direction == -1:
+                elev_values = elev_values[::-1]  # Reverse the order of the elevations
+            for elev in elev_values:
+                command = f'elev {elev}'
+                send_command(ser, command)
+                time.sleep(1)  # Pause for one second
+        
+            direction *= -1
+
+        ser.close()
+    except SerialException as e:
+        return jsonify(error=str(e)), 500
+
+    return jsonify(success=True)
 
 
 
