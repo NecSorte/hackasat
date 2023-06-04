@@ -101,8 +101,8 @@ def adjust_antenna(state, action):
     return azim, elev
 
 # Function to continuously track a device
-def track_device(mac_address):
-    global should_stop, current_state
+def track_device(device):
+    global should_stop, current_state, allDevices
     while not should_stop:
         # Choose action
         if random.uniform(0, 1) < epsilon:
@@ -116,8 +116,13 @@ def track_device(mac_address):
         os.system(f"/send_commands elev {elev}")
         time.sleep(1)  # Wait for a bit before checking again
 
-        output = os.popen(f"iwlist {INTERFACE} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
-        new_signal_strength = parse_signal_strength(output)
+        # Find the device in the allDevices array
+        device = next((dev for dev in allDevices if dev['mac'] == device['mac']), None)
+        if device is None:
+            continue
+        
+        # Get the new signal strength from the device
+        new_signal_strength = device.get('signal')
         reward = new_signal_strength if new_signal_strength else -100
 
         # Update Q-table
@@ -129,7 +134,7 @@ def track_device(mac_address):
 
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
-
+        
 # Route to start tracking
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
@@ -138,7 +143,16 @@ def start_tracking():
     mac_address = request.form.get('mac_address')
     if mac_address is None:
         return jsonify(success=False, message="mac_address is required"), 400
-    Thread(target=track_device, args=(mac_address,)).start()
+    
+    devices = get_known_devices()  # Get devices from the known_devices dictionary
+    
+    # Find the device with the specified MAC address
+    device = next((dev for dev in devices if dev['mac'] == mac_address), None)
+    
+    if device is None:
+        return jsonify(success=False, message="Device not found"), 404
+    
+    Thread(target=track_device, args=(device,)).start()
     return jsonify(success=True)
 
 @app.route('/stop_tracking', methods=['POST'])
