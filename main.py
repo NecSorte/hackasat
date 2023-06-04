@@ -135,7 +135,9 @@ def track_device(mac_address):
 def start_tracking():
     global should_stop
     should_stop = False
-    mac_address = request.form['mac_address']
+    mac_address = request.form.get('mac_address')
+    if mac_address is None:
+        return jsonify(success=False, message="mac_address is required"), 400
     Thread(target=track_device, args=(mac_address,)).start()
     return jsonify(success=True)
 
