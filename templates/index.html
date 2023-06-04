@@ -258,26 +258,26 @@ function populateWifiDetailsTable(devices) {
 function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
 
-sortedDevices.forEach(function (device) {
-        const row = `<tr>
-            <td>
-                <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
-                <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
-                <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
-            </td>
-            <td>${device.mac}</td>
-            <td>${device.essid}</td>
-            <td>${device.mode}</td>
-            <td>${device.channel}</td>
-            <td>${device.frequency}</td>
-            <td>${device.quality}</td>
-            <td>${device.signal}</td>
-            <td>${device.noise}</td>
-            <td>${device.encryption}</td>
-            <td>${device.device_type || ''}</td>
-        </tr>`;
-        tbody.append(row);
-    });
+    sortedDevices.forEach(function (device) {
+            const row = `<tr>
+                <td>
+                    <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
+                    <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
+                    <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
+                </td>
+                <td>${device.mac}</td>
+                <td>${device.essid}</td>
+                <td>${device.mode}</td>
+                <td>${device.channel}</td>
+                <td>${device.frequency}</td>
+                <td>${device.quality}</td>
+                <td>${device.signal}</td>
+                <td>${device.noise}</td>
+                <td>${device.encryption}</td>
+                <td>${device.device_type || ''}</td>
+            </tr>`;
+            tbody.append(row);
+        });
     
         $('.track-button').click(function() {
     var macAddress = $(this).data('mac');
