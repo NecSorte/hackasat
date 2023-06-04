@@ -34,6 +34,12 @@ def get_serial_ports():
     ports = [f'/dev/{dev}' for dev in os.listdir('/dev') if dev.startswith('ttyACM') or dev.startswith('ttyUSB')]
     return ports
 
+def send_command(ser, command):
+    for char in command:
+        ser.write(char.encode())
+        time.sleep(0.01)
+    ser.write(b'\r\n')
+
 # Function to extract signal strength from iwlist output
 def parse_signal_strength(output):
     m = re.search('Signal level=(-?\d+)', output)
