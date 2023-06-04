@@ -13,6 +13,9 @@ from queue import Queue
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
+from concurrent.futures import ThreadPoolExecutor
+
+executor = ThreadPoolExecutor(2)
 
 app = Flask(__name__)
 
@@ -83,6 +86,48 @@ def track_device(mac_address):
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
+ # 
+ def start_scan(port):
+    ser = serial.Serial(port, 9600, timeout=1)
+    
+    for azim in range(170, 6301, 3000):
+        command = f'G1 X{azim}'
+        send_command(ser, command)
+        for elev in range(650, 1401, 500):
+            command = f'G1 Y{elev}'
+            send_command(ser, command)
+    
+    ser.close()
+    return jsonify(success=True)
+   
+def array_scan(port):
+    ser = serial.Serial(port, 9600, timeout=1)
+    
+    azim_min = 170
+    azim_max = 6301
+    elev_min = 650
+    elev_max = 1401
+    step = 500
+
+    direction = 1
+    for azim in range(azim_min, azim_max + 1, step):
+        command = f'azim {azim}'
+        send_command(ser, command)
+        time.sleep(2)  # Pause for two seconds
+
+        elev_values = list(range(elev_min, elev_max + 1, step))
+        if direction == -1:
+            elev_values = elev_values[::-1]  # Reverse the order of the elevations
+        for elev in elev_values:
+            command = f'elev {elev}'
+            send_command(ser, command)
+            time.sleep(2)  # Pause for two seconds
+        
+        direction *= -1
+
+    ser.close()
+    return jsonify(success=True)
+    
 # Route to start tracking
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
@@ -133,21 +178,17 @@ def handle_iwlist():
 @app.route('/start_scan', methods=['POST'])
 def handle_start_scan():
     port = request.form['port']
-    ser = serial.Serial(port, 9600, timeout=1)
-    
-    for azim in range(170, 6301, 3000):
-        command = f'G1 X{azim}'
-        send_command(ser, command)
-        for elev in range(650, 1401, 500):
-            command = f'G1 Y{elev}'
-            send_command(ser, command)
-    
-    ser.close()
+    executor.submit(start_scan, port)
     return jsonify(success=True)
 
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     interface = request.form['interface']
+    executor.submit(wifi_scan, interface)
+    time.sleep(1)  # pause execution for 1 second
+    return jsonify(devices=list(devices.values()))
+
+def wifi_scan(interface):
     output = os.popen(f'sudo iwlist {interface} scan').read()
     devices = parse_wifi_scan_output(output)
     time.sleep(1)  # pause execution for 1 second
@@ -195,31 +236,7 @@ def extract_value(lines, start_index, pattern):
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
-    ser = serial.Serial(port, 9600, timeout=1)
-    
-    azim_min = 170
-    azim_max = 6301
-    elev_min = 650
-    elev_max = 1401
-    step = 500
-
-    direction = 1
-    for azim in range(azim_min, azim_max + 1, step):
-        command = f'azim {azim}'
-        send_command(ser, command)
-        time.sleep(2)  # Pause for two seconds
-
-        elev_values = list(range(elev_min, elev_max + 1, step))
-        if direction == -1:
-            elev_values = elev_values[::-1]  # Reverse the order of the elevations
-        for elev in elev_values:
-            command = f'elev {elev}'
-            send_command(ser, command)
-            time.sleep(2)  # Pause for two seconds
-        
-        direction *= -1
-
-    ser.close()
+    executor.submit(array_scan, port)
     return jsonify(success=True)
 
 
