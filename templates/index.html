@@ -177,6 +177,31 @@ $(document).ready(function() {
         }
     }
 
+        // Update the trackDevice function to track a specific MAC address
+    function trackDevice(macAddress) {
+      // Make a POST request to the server to start tracking the device
+      $.ajax({
+        type: 'POST',
+        url: '/track_device',
+        data: {
+          mac_address: macAddress
+        },
+        success: function(response) {
+          console.log(response);
+          // Handle the success response
+        },
+        error: function(error) {
+          console.log(error);
+          // Handle the error response
+        }
+      });
+    }
+
+// Add event listener to track button in each row
+$(document).on('click', '.track-button', function() {
+  var macAddress = $(this).data('mac'); // Get MAC address from the selected row
+  trackDevice(macAddress); // Call the trackDevice function with the MAC address
+});
     
     $('#wifi-scan-button').click(function() {
         wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
