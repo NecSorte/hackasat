@@ -287,14 +287,19 @@ function sortDevices(devices, sortColumn, sortDirection, tbody) { // receive tbo
     
 $('.track-button').click(function() {
     var macAddress = $(this).data('mac');
-    // You would replace '/track_device' with the actual path to the Python script on your server
-    $.post('/track_device', {
-        mac: macAddress
-    }, function(data) {
-        // handle the response here
-        console.log(data);
-    }).fail(function() {
-        console.log('Failed to track device');
+    $.ajax({
+        type: 'POST',
+        url: '/track_device',
+        data: JSON.stringify({
+            'mac_address': macAddress
+        }),
+        contentType: 'application/json;charset=UTF-8',
+        success: function(data) {
+            console.log(data);
+        },
+        error: function() {
+            console.log('Failed to track device');
+        }
     });
 });
 
