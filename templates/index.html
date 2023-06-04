@@ -214,6 +214,11 @@ function populateWifiDetailsTable(devices) {
     // Update the table body with sorted devices
     sortedDevices.forEach(function (device) {
         const row = `<tr>
+            <td>
+                <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
+                <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
+                <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
+            </td>
             <td>${device.mac}</td>
             <td>${device.essid}</td>
             <td>${device.mode}</td>
