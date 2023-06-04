@@ -13,6 +13,23 @@ from manuf import manuf
 
 app = Flask(__name__)
 
+
+# Constants
+AZIMUTH_RANGE = (160, 6400)
+ELEVATION_RANGE = (650, 1450)
+
+# Q-Learning parameters
+alpha = 0.5
+gamma = 0.95
+epsilon = 0.1
+state_space = 10
+action_space = 4
+q_table = np.zeros((state_space, action_space))
+
+# Global state
+current_state = 0
+should_stop = False
+
 # Define a lock
 lock = threading.Lock()
 
@@ -50,6 +67,8 @@ try:
 except:
     hasOUILookup = False
 
+    
+    
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
     interfaces = set(result.split('\n'))
@@ -66,6 +85,63 @@ def send_command(ser, command):
         time.sleep(0.01)
     ser.write(b'\r\n')
 
+# Function to extract signal strength from iwlist output
+def parse_signal_strength(output):
+    m = re.search('Signal level=(-?\d+)', output)
+    return int(m.group(1)) if m else None
+
+# Function to get the new position of the antenna based on the current state and action
+def adjust_antenna(state, action):
+    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
+    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
+    if action % 2 == 1:
+        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    return azim, elev
+
+# Function to continuously track a device
+def track_device(mac_address):
+    global should_stop, current_state
+    while not should_stop:
+        # Choose action
+        if random.uniform(0, 1) < epsilon:
+            action = np.random.choice(action_space)  # Explore action space
+        else:
+            action = np.argmax(q_table[current_state])  # Exploit learned values
+
+        # Take action and get reward
+        azim, elev = adjust_antenna(current_state, action)
+        os.system(f"/send_commands azim {azim}")
+        os.system(f"/send_commands elev {elev}")
+        time.sleep(1)  # Wait for a bit before checking again
+
+        output = os.popen(f"iwlist {INTERFACE} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
+        new_signal_strength = parse_signal_strength(output)
+        reward = new_signal_strength if new_signal_strength else -100
+
+        # Update Q-table
+        old_value = q_table[current_state, action]
+        next_max = np.max(q_table[current_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        q_table[current_state, action] = new_value
+
+        # Update current state
+        current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
+
+# Route to start tracking
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form['mac_address']
+    Thread(target=track_device, args=(mac_address,)).start()
+    return jsonify(success=True)
+
+# Route to stop tracking
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
+    
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
