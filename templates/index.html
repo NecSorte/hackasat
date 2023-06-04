@@ -285,15 +285,8 @@ function appendDevicesToTableBody(devices, tbody) {
     $('.ea-button').click(function() {
         console.log('Conducting electronic attack on: ' + $(this).data('mac'));
     });
-}
-    function sortDevices(devices, sortColumn, sortDirection, tbody) { 
-    const sortedDevices = [...devices];
-    // Implement your sorting logic here based on sortColumn and sortDirection
-    // No need to append the sorted devices to tbody here; it's done in appendDevicesToTableBody()
-    return sortedDevices;
-}
-
-$('#wifi-details-table th').click(function () {
+    
+    $('#wifi-details-table th').click(function () {
     const column = $(this).data('column');
     const tbody = $('#wifi-details-table tbody');
     const currentSortColumn = tbody.data('sort-column');
@@ -312,8 +305,38 @@ $('#wifi-details-table th').click(function () {
 
     // Re-populate the table with sorted devices
     populateWifiDetailsTable(allDevices);
-});
+    });  
+}
+function sortDevices(devices, sortColumn, sortDirection) {
+    const sortedDevices = [...devices];
+
+    sortedDevices.sort(function (a, b) {
+        const valueA = a[sortColumn];
+        const valueB = b[sortColumn];
+
+        if (valueA == null || valueA === undefined) {
+            return sortDirection === 'asc' ? -1 : 1;
+        } else if (valueB == null || valueB === undefined) {
+            return sortDirection === 'asc' ? 1 : -1;
+        }
+
+        const lowerCaseA = valueA.toString().toLowerCase();
+        const lowerCaseB = valueB.toString().toLowerCase();
+
+        if (lowerCaseA < lowerCaseB) {
+            return sortDirection === 'asc' ? -1 : 1;
+        } else if (lowerCaseA > lowerCaseB) {
+            return sortDirection === 'asc' ? 1 : -1;
+        } else {
+            return 0;
+        }
+    });
+
+    return sortedDevices;
+}
+
     
+});
 </script>
 </body>
 </html>
