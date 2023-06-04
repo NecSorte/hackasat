@@ -56,7 +56,6 @@ def adjust_antenna(state, action):
         azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
     return azim, elev
 
-# Function to continuously track a device
 def track_device(mac_address):
     global should_stop, current_state
     while not should_stop:
@@ -86,8 +85,7 @@ def track_device(mac_address):
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
- # 
- def start_scan(port):
+def start_scan(port):
     ser = serial.Serial(port, 9600, timeout=1)
     
     for azim in range(170, 6301, 3000):
@@ -127,6 +125,7 @@ def array_scan(port):
 
     ser.close()
     return jsonify(success=True)
+
     
 # Route to start tracking
 @app.route('/track_device', methods=['POST'])
