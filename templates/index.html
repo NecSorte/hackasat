@@ -218,6 +218,20 @@ function wifiScan() {
         console.log('Failed to retrieve devices');
     });
 }
+    
+ function parseWifiScanOutput(output) {
+    // Parse the output to get new devices
+    const newDevices = output.devices;
+
+    // Merge new devices with existing devices
+    allDevices = [...allDevices, ...newDevices];
+
+    // Eliminate duplicates
+    const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
+
+    // Update the Wi-Fi details table
+    populateWifiDetailsTable(uniqueDevices);
+}
 
 function populateWifiDetailsTable(devices) {
     // Clear the table body
@@ -234,7 +248,11 @@ function populateWifiDetailsTable(devices) {
     const sortedDevices = sortDevices(Array.from(deviceMap.values()), sortColumn, sortDirection, tbody); // pass tbody as a parameter
 
     // Update the table body with sorted devices
-    sortedDevices.forEach(function (device) {
+    appendDevicesToTableBody(sortedDevices, tbody);
+}
+
+function appendDevicesToTableBody(devices, tbody) {
+    devices.forEach(function (device) {
         const row = `<tr>
             <td>
                 <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
@@ -255,66 +273,47 @@ function populateWifiDetailsTable(devices) {
         tbody.append(row);
     });
 
-    // Add click event listeners to column headers for sorting
-    $('#wifi-details-table th').click(function () {
-        const column = $(this).data('column');
-        const currentSortColumn = tbody.data('sort-column');
-        let currentSortDirection = tbody.data('sort-direction');
+    // Add event listeners to the newly created buttons
+    $('.track-button').click(function() {
+        console.log('Tracking: ' + $(this).data('mac'));
+    });
 
-        // Toggle sort direction if clicking on the same column
-        if (column === currentSortColumn) {
-            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSortDirection = 'asc';
-        }
+    $('.crack-button').click(function() {
+        console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
+    });
 
-        // Update data attributes with new sort column and direction
-        tbody.data('sort-column', column);
-        tbody.data('sort-direction', currentSortDirection);
-
-        // Re-populate the table with sorted devices
-        populateWifiDetailsTable(Array.from(deviceMap.values()));
+    $('.ea-button').click(function() {
+        console.log('Conducting electronic attack on: ' + $(this).data('mac'));
     });
 }
-
-function sortDevices(devices, sortColumn, sortDirection, tbody) { // receive tbody as a parameter
+    function sortDevices(devices, sortColumn, sortDirection, tbody) { 
     const sortedDevices = [...devices];
-
-    sortedDevices.forEach(function (device) {
-            const row = `<tr>
-                <td>
-                    <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
-                    <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
-                    <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
-                </td>
-                <td>${device.mac}</td>
-                <td>${device.essid}</td>
-                <td>${device.mode}</td>
-                <td>${device.channel}</td>
-                <td>${device.frequency}</td>
-                <td>${device.quality}</td>
-                <td>${device.signal}</td>
-                <td>${device.noise}</td>
-                <td>${device.encryption}</td>
-                <td>${device.device_type || ''}</td>
-            </tr>`;
-            tbody.append(row);
-        });
-        return sortedDevices;
+    // Implement your sorting logic here based on sortColumn and sortDirection
+    // No need to append the sorted devices to tbody here; it's done in appendDevicesToTableBody()
+    return sortedDevices;
 }
-    
 
+$('#wifi-details-table th').click(function () {
+    const column = $(this).data('column');
+    const tbody = $('#wifi-details-table tbody');
+    const currentSortColumn = tbody.data('sort-column');
+    let currentSortDirection = tbody.data('sort-direction');
 
-$('.crack-button').click(function() {
-    console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
-});
+    // Toggle sort direction if clicking on the same column
+    if (column === currentSortColumn) {
+        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+        currentSortDirection = 'asc';
+    }
 
-$('.ea-button').click(function() {
-    console.log('Conducting electronic attack on: ' + $(this).data('mac'));
+    // Update data attributes with new sort column and direction
+    tbody.data('sort-column', column);
+    tbody.data('sort-direction', currentSortDirection);
+
+    // Re-populate the table with sorted devices
+    populateWifiDetailsTable(allDevices);
 });
     
-    
-});
 </script>
 </body>
 </html>
