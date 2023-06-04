@@ -6,6 +6,7 @@ import serial
 import datetime
 import subprocess
 import re
+import threading
 import numpy as np
 from threading import Thread
 from queue import Queue
@@ -33,31 +34,6 @@ def get_serial_ports():
     ports = [f'/dev/{dev}' for dev in os.listdir('/dev') if dev.startswith('ttyACM') or dev.startswith('ttyUSB')]
     return ports
 
-def send_command(ser, command):
-    for char in command:
-        ser.write(char.encode())
-        time.sleep(0.01)
-    ser.write(b'\r\n')
-
-# Constants
-INTERFACE = '{interface}'
-AZIMUTH_RANGE = (160, 6400)
-ELEVATION_RANGE = (650, 1450)
-
-# Q-Learning parameters
-alpha = 0.5
-gamma = 0.95
-epsilon = 0.1
-state_space = 10
-action_space = 4
-q_table = np.zeros((state_space, action_space))
-
-# Global state
-current_state = 0
-should_stop = False
-
-app = Flask(__name__)
-
 # Function to extract signal strength from iwlist output
 def parse_signal_strength(output):
     m = re.search('Signal level=(-?\d+)', output)
@@ -83,8 +59,8 @@ def track_device(mac_address):
 
         # Take action and get reward
         azim, elev = adjust_antenna(current_state, action)
-        os.system(f"/send_commands azim {azim}")
-        os.system(f"/send_commands elev {elev}")
+        send_command(ser, f"azim {azim}")
+        send_command(ser, f"elev {elev}")
         time.sleep(1)  # Wait for a bit before checking again
 
         output = os.popen(f"iwlist {INTERFACE} scan | grep -A5 '{mac_address}' | grep 'Signal level'").read()
@@ -107,7 +83,7 @@ def start_tracking():
     global should_stop
     should_stop = False
     mac_address = request.form['mac_address']
-    Thread(target=track_device, args=(mac_address,)).start()
+    threading.Thread(target=track_device, args=(mac_address,)).start()
     return jsonify(success=True)
 
 # Route to stop tracking
