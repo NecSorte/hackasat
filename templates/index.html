@@ -209,7 +209,7 @@ function populateWifiDetailsTable(devices) {
     // Sort devices based on the clicked column
     const sortColumn = tbody.data('sort-column');
     const sortDirection = tbody.data('sort-direction');
-    const sortedDevices = sortDevices(Object.values(devices), sortColumn, sortDirection);
+    const sortedDevices = sortDevices(Object.values(devices), sortColumn, sortDirection, tbody); // pass tbody as a parameter
 
     // Update the table body with sorted devices
     sortedDevices.forEach(function (device) {
@@ -255,7 +255,7 @@ function populateWifiDetailsTable(devices) {
     });
 }
 
-function sortDevices(devices, sortColumn, sortDirection) {
+function sortDevices(devices, sortColumn, sortDirection, tbody) { // receive tbody as a parameter
     const sortedDevices = [...devices];
 
     sortedDevices.forEach(function (device) {
