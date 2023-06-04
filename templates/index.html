@@ -274,10 +274,25 @@ function appendDevicesToTableBody(devices, tbody) {
     });
 
     // Add event listeners to the newly created buttons
-    $('.track-button').click(function() {
+    $(".track-button").click(function() {
         console.log('Tracking: ' + $(this).data('mac'));
+        var $this = $(this);
+        if ($this.text() == "Track") {
+            // Start tracking
+            $this.text("Stop Tracking");
+            $this.addClass("btn-danger");
+            $(".track-button").not($this).prop("disabled", true);
+            var mac_address = $this.data("mac-address");
+            $.post("/track_device", {mac_address: mac_address});
+     } else {
+            // Stop tracking
+            $this.text("Track");
+            $this.removeClass("btn-danger");
+            $(".track-button").prop("disabled", false);
+            $.post("/stop_tracking");
+        }
     });
-
+   
     $('.crack-button').click(function() {
         console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
     });
