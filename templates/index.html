@@ -206,10 +206,14 @@ function populateWifiDetailsTable(devices) {
     const tbody = $('#wifi-details-table tbody');
     tbody.empty();
 
+    // Convert the devices list to a map with MAC addresses as keys
+    const deviceMap = new Map();
+    devices.forEach(device => deviceMap.set(device.mac, device));
+
     // Sort devices based on the clicked column
     const sortColumn = tbody.data('sort-column');
     const sortDirection = tbody.data('sort-direction');
-    const sortedDevices = sortDevices(Object.values(devices), sortColumn, sortDirection, tbody); // pass tbody as a parameter
+    const sortedDevices = sortDevices(Array.from(deviceMap.values()), sortColumn, sortDirection, tbody); // pass tbody as a parameter
 
     // Update the table body with sorted devices
     sortedDevices.forEach(function (device) {
@@ -251,7 +255,7 @@ function populateWifiDetailsTable(devices) {
         tbody.data('sort-direction', currentSortDirection);
 
         // Re-populate the table with sorted devices
-        populateWifiDetailsTable(devices);
+        populateWifiDetailsTable(Array.from(deviceMap.values()));
     });
 }
 
