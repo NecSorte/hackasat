@@ -136,6 +136,7 @@ def track_device(device):
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
         
 # Route to start tracking
+# Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
     global should_stop
@@ -144,15 +145,13 @@ def start_tracking():
     if mac_address is None:
         return jsonify(success=False, message="mac_address is required"), 400
     
-    devices = get_known_devices()  # Get devices from the known_devices dictionary
-    
-    # Find the device with the specified MAC address
+    devices = get_known_devices()
     device = next((dev for dev in devices if dev['mac'] == mac_address), None)
-    
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
     
-    Thread(target=track_device, args=(device,)).start()
+    Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
+    
     return jsonify(success=True)
 
 @app.route('/stop_tracking', methods=['POST'])
