@@ -193,14 +193,13 @@ def handle_wifi_scan():
     time.sleep(1)  # pause execution for 1 second
     return jsonify(devices=list(devices.values()))
 
-def wifi_scan(interface):
+def wifi_scan(interface, known_devices):
     output = os.popen(f'sudo iwlist {interface} scan').read()
-    devices = parse_wifi_scan_output(output)
+    devices = parse_wifi_scan_output(output, known_devices)
     time.sleep(1)  # pause execution for 1 second
     return jsonify(devices=list(devices.values()))
 
-def parse_wifi_scan_output(output):
-    devices = {}
+def parse_wifi_scan_output(output, known_devices):
     lines = output.split('\n')
 
     p = manuf.MacParser()
@@ -208,25 +207,35 @@ def parse_wifi_scan_output(output):
     for index, line in enumerate(lines):
         if "Address" in line:
             mac = line.split()[-1]
-            if mac in devices:
-                continue
 
-            device_data = {
-                "mac": mac,
-                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Mode:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Quality=(.*)"),
-                "signal": extract_value(lines, index, "Signal level=(.*)"),
-                "noise": extract_value(lines, index, "Noise level=(.*)"),
-                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": p.get_manuf(mac) if p.get_manuf(mac) else None
-            }
+            # If the mac is in known devices, update the device's data
+            if mac in known_devices:
+                known_devices[mac]['essid'] = extract_value(lines, index, "ESSID:\"(.*)\"")
+                known_devices[mac]['mode'] = extract_value(lines, index, "Mode:(.*)")
+                known_devices[mac]['channel'] = extract_value(lines, index, "Channel:(.*)")
+                known_devices[mac]['frequency'] = extract_value(lines, index, "Frequency:(.*)")
+                known_devices[mac]['quality'] = extract_value(lines, index, "Quality=(.*)")
+                known_devices[mac]['signal'] = extract_value(lines, index, "Signal level=(.*)")
+                known_devices[mac]['noise'] = extract_value(lines, index, "Noise level=(.*)")
+                known_devices[mac]['encryption'] = extract_value(lines, index, "Encryption key:(.*)")
+                known_devices[mac]['device_type'] = p.get_manuf(mac) if p.get_manuf(mac) else None
+            else:
+                device_data = {
+                    "mac": mac,
+                    "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
+                    "mode": extract_value(lines, index, "Mode:(.*)"),
+                    "channel": extract_value(lines, index, "Channel:(.*)"),
+                    "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                    "quality": extract_value(lines, index, "Quality=(.*)"),
+                    "signal": extract_value(lines, index, "Signal level=(.*)"),
+                    "noise": extract_value(lines, index, "Noise level=(.*)"),
+                    "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                    "device_type": p.get_manuf(mac) if p.get_manuf(mac) else None
+                }
 
-            devices[mac] = device_data
+                known_devices[mac] = device_data
 
-    return devices
+    return known_devices
 
 
 
