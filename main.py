@@ -210,12 +210,18 @@ def handle_start_scan():
 
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
-    interface = request.form['interface']
-    output = os.popen(f'sudo iwlist {interface} scan').read()
-    devices = parse_wifi_scan_output(output)
-    for device in devices.values():
-        add_or_update_device(device)
-    return jsonify(devices=list(get_known_devices().values()))
+    try:
+        interface = request.form['interface']
+        print(f"Scanning on interface: {interface}")  # Debug line
+        output = os.popen(f'sudo iwlist {interface} scan').read()
+        print(output[:100])  # Debug line, print the first 100 characters of the output
+        devices = parse_wifi_scan_output(output)
+        for device in devices.values():
+            add_or_update_device(device)
+        return jsonify(devices=list(get_known_devices().values()))
+    except Exception as e:
+        print(e)  # Debug line
+        return jsonify(error=str(e)), 500
 
 def parse_wifi_scan_output(output):
     devices = {}
