@@ -12,9 +12,6 @@
         <div id="serial-ports" class="mb-3">
             <h2>Serial Ports</h2>
             <select id="port-selector" class="form-control">
-                {% for port in serial_ports %}
-                    <option value="{{ port }}">{{ port }}</option>
-                {% endfor %}
             </select>
             <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
             <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
@@ -24,13 +21,9 @@
         <div id="network-interfaces" class="mb-3">
             <h2>Network Interfaces</h2>
             <select id="interface-selector" class="form-control">
-                {% for interface in network_interfaces %}
-                    <option value="{{ interface }}">{{ interface }}</option>
-                {% endfor %}
             </select>
             <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
             <button id="array-scan-button" class="btn btn-primary mt-2">Start Array Scan</button>
-
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
 
@@ -57,7 +50,6 @@
                 </tbody>
             </table>
         </div>
-
 
 <script>
 $(document).ready(function() {
@@ -203,24 +195,24 @@ $(document).on('click', '.track-button', function() {
   trackDevice(macAddress); // Call the trackDevice function with the MAC address
 });
     
-    $('#wifi-scan-button').click(function() {
-        wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
+$('#wifi-scan-button').click(function() {
+    wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
 
-        // Update the wifi scan button appearance
-        if (wifiScanActive) {
-            $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
-            wifiScan();
-            // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
-        } else {
-            $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
-            // If there's already an interval, clear it
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
+    // Update the wifi scan button appearance
+    if (wifiScanActive) {
+        $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
+        wifiScan();
+        // Set up the interval for subsequent scans
+        intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
+    } else {
+        $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
+        // If there's already an interval, clear it
+        if (intervalId) {
+            clearInterval(intervalId);
+            intervalId = null;
         }
-    });
+    }
+});
 
 var allDevices = [];  // Array to accumulate all devices
 
