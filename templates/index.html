@@ -231,7 +231,7 @@ function wifiScan() {
             
             populateWifiDetailsTable(uniqueDevices);
         }
-    }).fail(function() {
+    }).fail(function(jqXHR, textStatus, errorThrown) {
         console.log('Failed to retrieve devices');
     });
 }
