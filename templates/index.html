@@ -12,6 +12,9 @@
         <div id="serial-ports" class="mb-3">
             <h2>Serial Ports</h2>
             <select id="port-selector" class="form-control">
+                {% for port in serial_ports %}
+                    <option value="{{ port }}">{{ port }}</option>
+                {% endfor %}
             </select>
             <textarea id="command-input" class="form-control mt-2" placeholder="Enter command"></textarea>
             <button id="send-command-button" class="btn btn-primary mt-2">Send Command</button>
@@ -21,9 +24,13 @@
         <div id="network-interfaces" class="mb-3">
             <h2>Network Interfaces</h2>
             <select id="interface-selector" class="form-control">
+                {% for interface in network_interfaces %}
+                    <option value="{{ interface }}">{{ interface }}</option>
+                {% endfor %}
             </select>
             <button id="wifi-scan-button" class="btn btn-primary mt-2">Start WiFi Scan</button>
             <button id="array-scan-button" class="btn btn-primary mt-2">Start Array Scan</button>
+
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
 
@@ -47,9 +54,30 @@
                 </thead>
 
                 <tbody>
+                    {% for device in devices %}
+                    <tr>
+                        <td>
+                            <button class="btn btn-primary track-button">Track</button>
+                            <button class="btn btn-danger crack-button">Crack</button>
+                            <button class="btn btn-warning ea-button">EA</button>
+                        </td>
+                        <td>{{ device.mac }}</td>
+                        <td>{{ device.essid }}</td>
+                        <td>{{ device.mode }}</td>
+                        <td>{{ device.channel }}</td>
+                        <td>{{ device.frequency }}</td>
+                        <td>{{ device.quality }}</td>
+                        <td>{{ device.signal }}</td>
+                        <td>{{ device.noise }}</td>
+                        <td>{{ device.encryption }}</td>
+                        <td>{{ device.device_type or '' }}</td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
+
             </table>
         </div>
+
 
 <script>
 $(document).ready(function() {
@@ -82,8 +110,11 @@ $(document).ready(function() {
         $.post('/send_command', {
             port: $('#port-selector').val(),
             command: $('#command-input').val()
-        }, function(data) {
+        }).done(function(data) {
             $('#command-response').text(data.response);
+        }).fail(function() {
+            // handle error here
+            console.log('Error: Unable to send command');
         });
     });
 
@@ -111,28 +142,15 @@ $(document).ready(function() {
             arrayScan();
         } else {
             $(this).text('Start Array Scan').addClass('btn-primary').removeClass('btn-danger');
-            // You would also need to figure out how to stop the arrayScan function once it's been started
+            // Clear the timeout for the arrayScan function
+            clearTimeout(arrayScanTimeoutId);
+            // Reset currentAzimuth and currentElevation values
+            currentAzimuth = AZIMUTH_START;
+            currentElevation = ELEVATION_START;
         }
     });
 
-    $('.track-button').click(function() {
-    var macAddress = $(this).data('mac');
-    $.ajax({
-        type: 'POST',
-        url: '/track_device',
-        data: JSON.stringify({
-            'mac_address': macAddress
-        }),
-        contentType: 'application/json;charset=UTF-8',
-        success: function(data) {
-            console.log(data);
-        },
-        error: function() {
-            console.log('Failed to track device');
-        }
-    });
-});
-    
+
     // Define the arrayScan timeout ID outside the arrayScan function
     var arrayScanTimeoutId = null;
 
@@ -169,51 +187,39 @@ $(document).ready(function() {
         }
     }
 
-        // Update the trackDevice function to track a specific MAC address
-    function trackDevice(macAddress) {
-      // Make a POST request to the server to start tracking the device
-      $.ajax({
-        type: 'POST',
-        url: '/track_device',
-        data: {
-          mac_address: macAddress
-        },
-        success: function(response) {
-          console.log(response);
-          // Handle the success response
-        },
-        error: function(error) {
-          console.log(error);
-          // Handle the error response
-        }
-      });
-    }
-
-// Add event listener to track button in each row
-$(document).on('click', '.track-button', function() {
-  var macAddress = $(this).data('mac'); // Get MAC address from the selected row
-  trackDevice(macAddress); // Call the trackDevice function with the MAC address
-});
     
-$('#wifi-scan-button').click(function() {
-    wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
+    $('#wifi-scan-button').click(function() {
+        wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
 
-    // Update the wifi scan button appearance
-    if (wifiScanActive) {
-        $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
-        wifiScan();
-        // Set up the interval for subsequent scans
-        intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
-    } else {
-        $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
-        // If there's already an interval, clear it
-        if (intervalId) {
-            clearInterval(intervalId);
-            intervalId = null;
+        // Update the wifi scan button appearance
+        if (wifiScanActive) {
+            $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
+            wifiScan();
+            // Set up the interval for subsequent scans
+            intervalId = setInterval(wifiScan, 50); // 1000 ms = 1 second
+        } else {
+            $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
+            // If there's already an interval, clear it
+            if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+            }
         }
-    }
-});
+    });
+    $('#wifi-details-table').on('click', '.track-button', function() {
+        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+        console.log(`Tracking ${macAddress}`);
+    });
 
+    $('#wifi-details-table').on('click', '.crack-button', function() {
+        const essid = $(this).closest('tr').find('td:nth-child(3)').text();
+        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+        console.log(`Beginning to crack: ESSID: ${essid}, MAC: ${macAddress}`);
+    });
+
+    $('#wifi-details-table').on('click', '.ea-button', function() {
+        console.log('Conducting electronic attack');
+    });
 var allDevices = [];  // Array to accumulate all devices
 
 // Define the function to perform a wifi scan
@@ -231,62 +237,24 @@ function wifiScan() {
             
             populateWifiDetailsTable(uniqueDevices);
         }
-    }).fail(function(jqXHR, textStatus, errorThrown) {
+    }).fail(function() {
         console.log('Failed to retrieve devices');
     });
 }
-    
- function parseWifiScanOutput(output) {
-    // Parse the output to get new devices
-    const newDevices = output.devices;
-
-    // Merge new devices with existing devices
-    allDevices = [...allDevices, ...newDevices];
-
-    // Eliminate duplicates
-    const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
-
-    // Update the Wi-Fi details table
-    populateWifiDetailsTable(uniqueDevices);
-}
 
 function populateWifiDetailsTable(devices) {
-    var tableBody = $('#wifi-details-table tbody');
-    tableBody.empty();
-
-    // Convert the devices list to a map with MAC addresses as keys
-    const deviceMap = new Map();
-    devices.forEach(device => deviceMap.set(device.mac, device));
+    // Clear the table body
+    const tbody = $('#wifi-details-table tbody');
+    tbody.empty();
 
     // Sort devices based on the clicked column
-    const sortColumn = tableBody.data('sort-column');
-    const sortDirection = tableBody.data('sort-direction');
-    const sortedDevices = sortDevices(Array.from(deviceMap.values()), sortColumn, sortDirection);
+    const sortColumn = tbody.data('sort-column');
+    const sortDirection = tbody.data('sort-direction');
+    const sortedDevices = sortDevices(Object.values(devices), sortColumn, sortDirection);
 
     // Update the table body with sorted devices
-    sortedDevices.forEach(device => {
-        var row = $('<tr>');
-        row.append($('<td>').text(device.mac));
-        row.append($('<td>').text(device.essid));
-        row.append($('<td>').text(device.signal));
-        row.append($('<td>').text(device.device_type));
-        row.append($('<td>').html('<button class="btn btn-primary btn-sm track-btn" data-mac="' + device.mac + '">Track</button>'));
-        tableBody.append(row);
-    });
-
-    $('.track-button').click(function () {
-        var macAddress = $(this).data('mac');
-        trackDevice(macAddress); // Call the trackDevice function with the MAC address
-    });
-}
-function appendDevicesToTableBody(devices, tbody) {
-    devices.forEach(function (device) {
+    sortedDevices.forEach(function (device) {
         const row = `<tr>
-            <td>
-                <button class="btn btn-success track-button" data-mac="${device.mac}">Track</button>
-                <button class="btn btn-primary crack-button" data-essid="${device.essid}" data-mac="${device.mac}">Crack</button>
-                <button class="btn btn-danger ea-button" data-mac="${device.mac}">EA</button>
-            </td>
             <td>${device.mac}</td>
             <td>${device.essid}</td>
             <td>${device.mode}</td>
@@ -301,55 +269,28 @@ function appendDevicesToTableBody(devices, tbody) {
         tbody.append(row);
     });
 
-    // Add event listeners to the newly created buttons
-    $(".track-button").click(function() {
-        console.log('Tracking: ' + $(this).data('mac'));
-        var $this = $(this);
-        if ($this.text() == "Track") {
-            // Start tracking
-            $this.text("Stop Tracking");
-            $this.addClass("btn-danger");
-            $(".track-button").not($this).prop("disabled", true);
-            var mac_address = $this.data("mac-address");
-            $.post("/track_device", {mac_address: mac_address});
-     } else {
-            // Stop tracking
-            $this.text("Track");
-            $this.removeClass("btn-danger");
-            $(".track-button").prop("disabled", false);
-            $.post("/stop_tracking");
-        }
-    });
-   
-    $('.crack-button').click(function() {
-        console.log('Beginning to Crack. ESSID: ' + $(this).data('essid') + ', MAC: ' + $(this).data('mac'));
-    });
-
-    $('.ea-button').click(function() {
-        console.log('Conducting electronic attack on: ' + $(this).data('mac'));
-    });
-    
+    // Add click event listeners to column headers for sorting
     $('#wifi-details-table th').click(function () {
-    const column = $(this).data('column');
-    const tbody = $('#wifi-details-table tbody');
-    const currentSortColumn = tbody.data('sort-column');
-    let currentSortDirection = tbody.data('sort-direction');
+        const column = $(this).data('column');
+        const currentSortColumn = tbody.data('sort-column');
+        let currentSortDirection = tbody.data('sort-direction');
 
-    // Toggle sort direction if clicking on the same column
-    if (column === currentSortColumn) {
-        currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-        currentSortDirection = 'asc';
-    }
+        // Toggle sort direction if clicking on the same column
+        if (column === currentSortColumn) {
+            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            currentSortDirection = 'asc';
+        }
 
-    // Update data attributes with new sort column and direction
-    tbody.data('sort-column', column);
-    tbody.data('sort-direction', currentSortDirection);
+        // Update data attributes with new sort column and direction
+        tbody.data('sort-column', column);
+        tbody.data('sort-direction', currentSortDirection);
 
-    // Re-populate the table with sorted devices
-    populateWifiDetailsTable(allDevices);
-    });  
+        // Re-populate the table with sorted devices
+        populateWifiDetailsTable(devices);
+    });
 }
+
 function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
 
