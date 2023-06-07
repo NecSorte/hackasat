@@ -6,11 +6,60 @@ import serial
 import datetime
 import subprocess
 import re
+import threading
 
+import numpy as np
+from threading import Thread
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
 
 app = Flask(__name__)
+
+
+# Constants
+AZIMUTH_RANGE = (160, 6400)
+ELEVATION_RANGE = (650, 1450)
+
+# Q-Learning parameters
+alpha = 0.5
+gamma = 0.95
+epsilon = 0.1
+state_space = 10
+action_space = 4
+q_table = np.zeros((state_space, action_space))
+
+# Global state
+current_state = 0
+should_stop = False
+
+# Define a lock
+lock = threading.Lock()
+
+# Define the known devices dictionary
+known_devices = {}
+
+# Define the function that modifies known_devices
+def add_or_update_device(device):
+    # Acquire the lock before accessing known_devices
+    lock.acquire()
+    try:
+        # Do stuff with known_devices here
+        known_devices[device['mac']] = device
+    finally:
+        # Always release the lock after we're done with it
+        lock.release()
+
+# Define the function that reads known_devices
+def get_known_devices():
+    # Acquire the lock before accessing known_devices
+    lock.acquire()
+    try:
+        # Do stuff with known_devices here
+        return get_known_devices().copy()  # Return a copy of the known_devices dictionary
+    finally:
+        # Always release the lock after we're done with it
+        lock.release()
+
 
 hasOUILookup = False
 
@@ -20,6 +69,8 @@ try:
 except:
     hasOUILookup = False
 
+    
+    
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
     interfaces = set(result.split('\n'))
@@ -36,6 +87,79 @@ def send_command(ser, command):
         time.sleep(0.01)
     ser.write(b'\r\n')
 
+# Function to extract signal strength from iwlist output
+def parse_signal_strength(output):
+    m = re.search('Signal level=(-?\d+)', output)
+    return int(m.group(1)) if m else None
+
+# Function to get the new position of the antenna based on the current state and action
+def adjust_antenna(state, action):
+    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
+    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
+    if action % 2 == 1:
+        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    return azim, elev
+
+# Function to continuously track a device
+def track_device(device):
+    global should_stop, current_state, allDevices
+    while not should_stop:
+        # Choose action
+        if random.uniform(0, 1) < epsilon:
+            action = np.random.choice(action_space)  # Explore action space
+        else:
+            action = np.argmax(q_table[current_state])  # Exploit learned values
+
+        # Take action and get reward
+        azim, elev = adjust_antenna(current_state, action)
+        os.system(f"/send_commands azim {azim}")
+        os.system(f"/send_commands elev {elev}")
+        time.sleep(1)  # Wait for a bit before checking again
+
+        # Find the device in the allDevices array
+        device = next((dev for dev in allDevices if dev['mac'] == device['mac']), None)
+        if device is None:
+            continue
+        
+        # Get the new signal strength from the device
+        new_signal_strength = device.get('signal')
+        reward = new_signal_strength if new_signal_strength else -100
+
+        # Update Q-table
+        old_value = q_table[current_state, action]
+        next_max = np.max(q_table[current_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        q_table[current_state, action] = new_value
+
+        # Update current state
+        current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
+        
+# Route to start tracking
+# Update the /track_device route to track one MAC address
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form.get('mac_address')
+    if mac_address is None:
+        return jsonify(success=False, message="mac_address is required"), 400
+    
+    devices = get_known_devices()
+    device = next((dev for dev in devices if dev['mac'] == mac_address), None)
+    if device is None:
+        return jsonify(success=False, message="Device not found"), 404
+    
+    Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
+    
+    return jsonify(success=True)
+
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
+    should_stop = True
+    return jsonify(success=True)
+    
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
@@ -89,7 +213,9 @@ def handle_wifi_scan():
     interface = request.form['interface']
     output = os.popen(f'sudo iwlist {interface} scan').read()
     devices = parse_wifi_scan_output(output)
-    return jsonify(devices=list(devices.values()))
+    for device in devices.values():
+        add_or_update_device(device)
+    return jsonify(devices=list(get_known_devices().values()))
 
 def parse_wifi_scan_output(output):
     devices = {}
@@ -130,6 +256,11 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
+
+
+
+import time
+
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
@@ -145,7 +276,7 @@ def handle_array_scan():
     for azim in range(azim_min, azim_max + 1, step):
         command = f'azim {azim}'
         send_command(ser, command)
-        time.sleep(2)  # Pause for two seconds
+        time.sleep(1)  # Pause for one second
 
         elev_values = list(range(elev_min, elev_max + 1, step))
         if direction == -1:
@@ -153,7 +284,7 @@ def handle_array_scan():
         for elev in elev_values:
             command = f'elev {elev}'
             send_command(ser, command)
-            time.sleep(2)  # Pause for two seconds
+            time.sleep(1)  # Pause for one second
         
         direction *= -1
 
