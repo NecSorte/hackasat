@@ -246,21 +246,23 @@ def parse_wifi_scan_output(output):
                 continue
 
             device_data = {
-                "action": "Unknown",  # You need to determine how to set this value
+                "action": "Unknown",
                 "mac": mac,
                 "manuf": p.get_manuf(mac) if p.get_manuf(mac) else None,
                 "ssid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "security": "Unknown",  # You need to determine how to set this value
-                "privacy": "Unknown",  # You need to determine how to set this value
+                "security": "Unknown",
+                "privacy": "Unknown",
                 "channel": extract_value(lines, index, "Channel:(.*)"),
                 "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "signal_strength": extract_value(lines, index, "Signal level=(.*)"),
-                "bandwidth": "Unknown",  # You need to determine how to set this value
-                "%_utilization": "Unknown",  # You need to determine how to set this value
-                "stations": "Unknown",  # You need to determine how to set this value
-                "last_seen": "Unknown",  # You need to determine how to set this value
-                "first_seen": "Unknown",  # You need to determine how to set this value
+                "signal_strength": extract_value(lines, index, "Signal level=(.*)") or 'Unknown',
+                "bandwidth": "Unknown",
+                "%_utilization": "Unknown",
+                "stations": "Unknown",
+                "last_seen": "Unknown",
+                "first_seen": "Unknown",
+                
             }
+
 
             devices[mac] = device_data
 
