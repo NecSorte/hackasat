@@ -228,6 +228,7 @@ function wifiScan() {
     $.post('/wifi_scan', {
         interface: $('#interface-selector').val()
     }, function(data) {
+        console.log(data)
         if(data && data.devices) { // Check if devices array exists in response
             // Merge new devices with previously found devices
             allDevices = [...allDevices, ...data.devices];
