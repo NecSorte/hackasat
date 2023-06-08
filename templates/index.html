@@ -83,8 +83,7 @@
 
             </table>
         </div>
-
-
+    </div>
 
 <script>
 $(document).ready(function() {
@@ -125,20 +124,6 @@ $(document).ready(function() {
         });
     });
 
-    // Define the start and end values for azimuth and elevation
-    const AZIMUTH_START = 160;
-    const AZIMUTH_END = 6400;
-    const ELEVATION_START = 650;
-    const ELEVATION_END = 1400;
-
-    // Define the current azimuth and elevation
-    var currentAzimuth = AZIMUTH_START;
-    var currentElevation = ELEVATION_START;
-
-    // Define the increment values for azimuth and elevation
-    var azimuthIncrement = 100;  // adjust as needed
-    var elevationIncrement = 50;  // adjust as needed
-
     // Array scan button click event handler
     $('#array-scan-button').click(function() {
         arrayScanActive = !arrayScanActive; // Toggle the array scan state
@@ -157,6 +142,19 @@ $(document).ready(function() {
         }
     });
 
+    // Define the start and end values for azimuth and elevation
+    const AZIMUTH_START = 160;
+    const AZIMUTH_END = 6400;
+    const ELEVATION_START = 650;
+    const ELEVATION_END = 1400;
+
+    // Define the current azimuth and elevation
+    var currentAzimuth = AZIMUTH_START;
+    var currentElevation = ELEVATION_START;
+
+    // Define the increment values for azimuth and elevation
+    var azimuthIncrement = 100;  // adjust as needed
+    var elevationIncrement = 50;  // adjust as needed
 
     // Define the arrayScan timeout ID outside the arrayScan function
     var arrayScanTimeoutId = null;
@@ -326,8 +324,6 @@ function sortDevices(devices, sortColumn, sortDirection) {
 
     return sortedDevices;
 }
-
-    
 });
 </script>
 </body>
