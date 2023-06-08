@@ -218,6 +218,7 @@ def handle_wifi_scan():
         devices = parse_wifi_scan_output(output)
         for device in devices.values():
             add_or_update_device(device)
+        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, 
         return jsonify(devices=list(get_known_devices().values()))
     except Exception as e:
         print(e)  # Debug line
@@ -265,7 +266,7 @@ def extract_value(lines, start_index, pattern):
 
 
 
-import time
+
 
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
@@ -276,7 +277,7 @@ def handle_array_scan():
     azim_max = 6301
     elev_min = 650
     elev_max = 1401
-    step = 500
+    step = 200
 
     direction = 1
     for azim in range(azim_min, azim_max + 1, step):
