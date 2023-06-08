@@ -233,38 +233,34 @@ def handle_wifi_scan():
         print(e)  # Debug line
         return jsonify(error=str(e)), 500
 
+def extract_value_for_key(lines, start_index, key):
+    for i in range(start_index + 1, len(lines)):
+        if key in lines[i]:
+            return lines[i].split(":")[-1].strip()
+    return None
+
 def parse_wifi_scan_output(output):
     devices = {}
     lines = output.split('\n')
 
-    p = manuf.MacParser()
-
     for index, line in enumerate(lines):
         if "Address" in line:
-            mac = line.split()[-1]
-            if mac in devices:
+            address = line.split()[-1]
+            if address in devices:
                 continue
 
             device_data = {
-                "action": "Unknown",
-                "mac": mac,
-                "manuf": p.get_manuf(mac) if p.get_manuf(mac) else None,
-                "ssid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "security": "Unknown",
-                "privacy": "Unknown",
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "signal_strength": extract_value(lines, index, "Signal level=(.*)") or 'Unknown',
-                "bandwidth": "Unknown",
-                "%_utilization": "Unknown",
-                "stations": "Unknown",
-                "last_seen": "Unknown",
-                "first_seen": "Unknown",
-                
+                "Address": address,
+                "ESSID": extract_value_for_key(lines, index, "ESSID"),
+                "Protocol": extract_value_for_key(lines, index, "Protocol"),
+                "Mode": extract_value_for_key(lines, index, "Mode"),
+                "Frequency": extract_value_for_key(lines, index, "Frequency"),
+                "Encryption key": extract_value_for_key(lines, index, "Encryption key"),
+                "IE": extract_value_for_key(lines, index, "IE:"),
+                "Quality": extract_value_for_key(lines, index, "Quality"),
+                "Signal level": extract_value_for_key(lines, index, "Signal level"),
             }
-
-
-            devices[mac] = device_data
+            devices[address] = device_data
 
     return devices
 
