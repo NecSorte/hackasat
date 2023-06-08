@@ -46,16 +46,17 @@ def add_or_update_device(new_device):
 
         if existing_device is not None:
             # The device already exists in the dictionary. Update it.
-            existing_device['ssid'] = new_device['ssid']  # Update the SSID
-            existing_device['signal'] = new_device['signal']  # Update the signal strength
-            existing_device['channel'] = new_device['channel']  # Update the channel
-            existing_device['lastSeen'] = new_device['lastSeen']  # Update the lastSeen time
-            existing_device['encryption'] = new_device['encryption']  # Update the encryption type
-            existing_device['frequency'] = new_device['frequency']  # Update the frequency
+            existing_device['ssid'] = new_device.get('ssid')  # Update the SSID
+            existing_device['signal'] = new_device.get('signal')  # Update the signal strength
+            existing_device['channel'] = new_device.get('channel')  # Update the channel
+            existing_device['lastSeen'] = new_device.get('lastSeen')  # Update the lastSeen time
+            existing_device['encryption'] = new_device.get('encryption')  # Update the encryption type
+            existing_device['frequency'] = new_device.get('frequency')  # Update the frequency
             # ... Add any other fields that may need updating ...
         else:
             # This is a new device. Add it to the dictionary.
             known_devices[new_device['mac']] = new_device
+
 
 
 # Define the function that reads known_devices
