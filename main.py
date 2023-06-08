@@ -39,11 +39,24 @@ lock = threading.Lock()
 known_devices = {}
 
 # Define the function that modifies known_devices
-def add_or_update_device(device):
+def add_or_update_device(new_device):
     # Acquire the lock before accessing known_devices
     with lock:
-        # Do stuff with known_devices here
-        known_devices[device['mac']] = device
+        existing_device = known_devices.get(new_device['mac'])
+
+        if existing_device is not None:
+            # The device already exists in the dictionary. Update it.
+            existing_device['ssid'] = new_device['ssid']  # Update the SSID
+            existing_device['signal'] = new_device['signal']  # Update the signal strength
+            existing_device['channel'] = new_device['channel']  # Update the channel
+            existing_device['lastSeen'] = new_device['lastSeen']  # Update the lastSeen time
+            existing_device['encryption'] = new_device['encryption']  # Update the encryption type
+            existing_device['frequency'] = new_device['frequency']  # Update the frequency
+            # ... Add any other fields that may need updating ...
+        else:
+            # This is a new device. Add it to the dictionary.
+            known_devices[new_device['mac']] = new_device
+
 
 # Define the function that reads known_devices
 def get_known_devices():
