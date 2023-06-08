@@ -41,24 +41,16 @@ known_devices = {}
 # Define the function that modifies known_devices
 def add_or_update_device(device):
     # Acquire the lock before accessing known_devices
-    lock.acquire()
-    try:
+    with lock:
         # Do stuff with known_devices here
         known_devices[device['mac']] = device
-    finally:
-        # Always release the lock after we're done with it
-        lock.release()
 
 # Define the function that reads known_devices
 def get_known_devices():
     # Acquire the lock before accessing known_devices
-    lock.acquire()
-    try:
+    with lock:
         # Do stuff with known_devices here
-        return get_known_devices().copy()  # Return a copy of the known_devices dictionary
-    finally:
-        # Always release the lock after we're done with it
-        lock.release()
+        return known_devices.copy()  # Return a copy of the known_devices dictionary
 
 
 hasOUILookup = False
