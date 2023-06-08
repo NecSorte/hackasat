@@ -50,20 +50,21 @@ def add_or_update_device(new_device):
             # The device already exists in the dictionary. Update it.
             existing_device = known_devices.get(new_device['mac'])
 
-            existing_device['ssid'] = new_device['ssid']  # Update the SSID
-            existing_device['signal'] = new_device['signal']  # Update the signal strength
-            existing_device['channel'] = new_device['channel']  # Update the channel
-            existing_device['lastSeen'] = new_device['lastSeen']  # Update the lastSeen time
-            existing_device['encryption'] = new_device['encryption']  # Update the encryption type
-            existing_device['frequency'] = new_device['frequency']  # Update the frequency
-            # ... Add any other fields that may need updating ...
+            # Update fields in existing_device if they are present in new_device
+            for field in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']:
+                if field in new_device:
+                    existing_device[field] = new_device[field]
+                else:
+                    print(f"Warning: Missing field {field} in new_device")
         else:
             # This is a new device. Add it to the dictionary.
-            known_devices[new_device['mac']] = new_device
-
-            # Add the MAC address to the set of seen MAC addresses
-            seen_mac_addresses.add(new_device['mac'])
-
+            if all(key in new_device for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']):
+                known_devices[new_device['mac']] = new_device
+                # Add the MAC address to the set of seen MAC addresses
+                seen_mac_addresses.add(new_device['mac'])
+            else:
+                missing_keys = [key for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency'] if key not in new_device]
+                print(f"Warning: Cannot add new_device to known_devices due to missing keys: {missing_keys}")
 
 # Define the function that reads known_devices
 def get_known_devices():
