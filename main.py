@@ -236,7 +236,7 @@ def parse_wifi_scan_output(output):
                 continue
 
             device_data = {
-                "Address": address,
+                "mac": extract_value_for_key(lines, index, "Address"),
                 "ESSID": extract_value_for_key(lines, index, "ESSID"),
                 "Protocol": extract_value_for_key(lines, index, "Protocol"),
                 "Mode": extract_value_for_key(lines, index, "Mode"),
