@@ -219,6 +219,7 @@ def handle_wifi_scan():
         print(e)  # Debug line
         return jsonify(error=str(e)), 500
 
+#not used anymore, but keeping it here just in case...
 def extract_value_for_key(lines, start_index, key):
     for i in range(start_index + 1, len(lines)):
         if key in lines[i]:
@@ -230,27 +231,26 @@ def parse_wifi_scan_output(output):
     lines = output.split('\n')
 
     for index, line in enumerate(lines):
-        if "Address" in line:
-            address = line.split()[-1]
+        if "MAC Address" in line:
+            address = line.split()[2]
             if address in devices:
                 continue
 
             device_data = {
-                "mac": extract_value_for_key(lines, index, "Address"),
-                "ESSID": extract_value_for_key(lines, index, "ESSID"),
-                "Protocol": extract_value_for_key(lines, index, "Protocol"),
-                "Mode": extract_value_for_key(lines, index, "Mode"),
-                "Frequency": extract_value_for_key(lines, index, "Frequency"),
-                "Encryption key": extract_value_for_key(lines, index, "Encryption key"),
-                "IE": extract_value_for_key(lines, index, "IE:"),
-                "Quality": extract_value_for_key(lines, index, "Quality"),
-                "Signal level": extract_value_for_key(lines, index, "Signal level"),
+                "mac": address,
+                "essid": extract_value(lines, index, "SSID:\"(.*)\""),
+                "mode": extract_value(lines, index, "Privacy:(.*)"),
+                "channel": extract_value(lines, index, "Channel:(.*)"),
+                "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                "quality": extract_value(lines, index, "Signal Strength:(.*)"),
+                "signal": extract_value(lines, index, "Bandwidth:(.*)"),
+                "noise": None,  # It seems like this data is not provided
+                "encryption": extract_value(lines, index, "Security:(.*)"),
+                "device_type": extract_value(lines, index, "MANUF:(.*)"),
             }
             devices[address] = device_data
 
     return devices
-
-
 
 def extract_value(lines, start_index, pattern):
     regex = re.compile(pattern)
@@ -259,11 +259,6 @@ def extract_value(lines, start_index, pattern):
         if match:
             return match.group(1)
     return None
-
-
-
-
-
 
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
