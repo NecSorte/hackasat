@@ -41,26 +41,12 @@ known_devices = {}
 # Define the set of seen MAC addresses
 seen_mac_addresses = set()
 
-def add_or_update_device(new_device):
+# Define the function that modifies known_devices
+def add_or_update_device(device):
     # Acquire the lock before accessing known_devices
     with lock:
-        # Check if we've seen this MAC address before
-        if new_device['mac'] in seen_mac_addresses:
-            # The device already exists in the dictionary. Update it.
-            existing_device = known_devices.get(new_device['mac'])
-
-            # Update fields in existing_device if they are present in new_device
-            for field in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']:
-                existing_device[field] = new_device.get(field, existing_device.get(field, None))
-        else:
-            # This is a new device. Add it to the dictionary.
-            if all(key in new_device for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']):
-                known_devices[new_device['mac']] = new_device
-                # Add the MAC address to the set of seen MAC addresses
-                seen_mac_addresses.add(new_device['mac'])
-            else:
-                missing_keys = [key for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency'] if key not in new_device]
-                print(f"Warning: Cannot add new_device to known_devices due to missing keys: {missing_keys}")
+        # Do stuff with known_devices here
+        known_devices[device['mac']] = device
 
 # Define the function that reads known_devices
 def get_known_devices():
