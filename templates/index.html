@@ -34,25 +34,22 @@
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
 
-        <div id="wifi-details" class="mb-3">
+               <div id="wifi-details" class="mb-3">
             <h2>WiFi Details</h2>
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
                         <th>Actions</th>
                         <th>MAC Address</th>
-                        <th>MANUF</th>
-                        <th>SSID</th>
-                        <th>Security</th>
-                        <th>Privacy</th>
+                        <th>ESSID</th>
+                        <th>Mode</th>
                         <th>Channel</th>
                         <th>Frequency</th>
-                        <th>Signal Strength</th>
-                        <th>Bandwidth</th>
-                        <th>% Utilization</th>
-                        <th>Stations</th>
-                        <th>Last Seen</th>
-                        <th>First Seen</th>
+                        <th>Quality</th>
+                        <th>Signal</th>
+                        <th>Noise</th>
+                        <th>Encryption</th>
+                        <th>Device Type</th>
                     </tr>
                 </thead>
 
@@ -65,18 +62,15 @@
                             <button class="btn btn-warning ea-button">EA</button>
                         </td>
                         <td>{{ device.mac }}</td>
-                        <td>{{ device.manuf }}</td>
-                        <td>{{ device.ssid }}</td>
-                        <td>{{ device.security }}</td>
-                        <td>{{ device.privacy }}</td>
+                        <td>{{ device.essid }}</td>
+                        <td>{{ device.mode }}</td>
                         <td>{{ device.channel }}</td>
                         <td>{{ device.frequency }}</td>
+                        <td>{{ device.quality }}</td>
                         <td>{{ device.signal }}</td>
-                        <td>{{ device.bandwidth }}</td>
-                        <td>{{ device.utilization }}</td>
-                        <td>{{ device.stations }}</td>
-                        <td>{{ device.last_seen }}</td>
-                        <td>{{ device.first_seen }}</td>
+                        <td>{{ device.noise }}</td>
+                        <td>{{ device.encryption }}</td>
+                        <td>{{ device.device_type }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
