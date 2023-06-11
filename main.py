@@ -41,20 +41,20 @@ known_devices = {}
 # Define the set of seen MAC addresses
 seen_mac_addresses = set()
 
+# Define the function that modifies known_devices
 def add_or_update_device(device):
     # Acquire the lock before accessing known_devices
-    with lock.acquire():
+    with lock:
         # Do stuff with known_devices here
         known_devices[device['mac']] = device
-    lock.release()
 
+# Define the function that reads known_devices
 def get_known_devices():
     # Acquire the lock before accessing known_devices
-    with lock.acquire():
+    with lock:
         # Do stuff with known_devices here
-        res = known_devices.copy()  # Return a copy of the known_devices dictionary
-    lock.release()
-    return res
+        return known_devices.copy()  # Return a copy of the known_devices dictionary
+
 
 
 hasOUILookup = False
