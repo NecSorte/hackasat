@@ -203,6 +203,7 @@ def handle_start_scan():
     ser.close()
     return jsonify(success=True)
 
+# Update the /wifi_scan route to populate the Wi-Fi details table
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     try:
@@ -214,11 +215,42 @@ def handle_wifi_scan():
         for device in devices.values():
             add_or_update_device(device)
         print(jsonify(devices=list(get_known_devices().values())))  # Debug line, print the devices
-        return jsonify(devices=list(get_known_devices().values()))
+        wifi_table_body = populateWifiDetailsTable(get_known_devices().values())
+        return jsonify(success=True, wifi_table_body=wifi_table_body)
     except Exception as e:
         print(e)  # Debug line
-        return jsonify(error=str(e)), 500
+        return jsonify(success=False, error=str(e)), 500
 
+# Define the function to populate the Wi-Fi details table
+def populateWifiDetailsTable(devices):
+    # Clear the table body
+    tbody = ''
+
+    # Iterate over the devices and generate table rows
+    for device in devices:
+        row = f'''
+        <tr>
+            <td>
+                <button class="btn btn-primary track-button">Track</button>
+                <button class="btn btn-danger crack-button">Crack</button>
+                <button class="btn btn-warning ea-button">EA</button>
+            </td>
+            <td>{device['mac']}</td>
+            <td>{device['essid']}</td>
+            <td>{device['mode']}</td>
+            <td>{device['channel']}</td>
+            <td>{device['frequency']}</td>
+            <td>{device['quality']}</td>
+            <td>{device['signal']}</td>
+            <td>{device['noise']}</td>
+            <td>{device['encryption']}</td>
+            <td>{device['device_type']}</td>
+        </tr>
+        '''
+        tbody += row
+
+    return tbody
+    
 #not used anymore, but keeping it here just in case...
 def extract_value_for_key(lines, start_index, key):
     for i in range(start_index + 1, len(lines)):
