@@ -213,7 +213,7 @@ def handle_wifi_scan():
         devices = parse_wifi_scan_output(output)
         for device in devices.values():
             add_or_update_device(device)
-        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, 
+        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, print the devices
         return jsonify(devices=list(get_known_devices().values()))
     except Exception as e:
         print(e)  # Debug line
