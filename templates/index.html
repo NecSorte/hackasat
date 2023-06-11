@@ -226,7 +226,8 @@ $(document).ready(function() {
         // Call the /wifi_scan endpoint
         $.post('/wifi_scan', {
             interface: $('#interface-selector').val()
-        }, function(data) {
+        })
+        .done(function(data) {
             console.log(data);
             if(data && data.devices) { // Check if devices array exists in response
                 // Merge new devices with previously found devices
@@ -234,13 +235,21 @@ $(document).ready(function() {
 
                 // Eliminate duplicates
                 const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
-                
+
                 populateWifiDetailsTable(uniqueDevices);
             }
-        }).fail(function() {
+        })
+        .fail(function(jqXHR, textStatus, errorThrown) {
             console.log('Failed to retrieve devices');
+            console.error(`Request failed: ${textStatus} - ${errorThrown}`);
+            console.error(`Response: ${jqXHR.responseText}`);
         });
-    }
+
+        .fail(function(jqXHR, textStatus, errorThrown) {
+            console.log('Failed to retrieve devices');
+            console.error(`Request failed: ${textStatus} - ${errorThrown}`);
+            console.error(`Response: ${jqXHR.responseText}`);
+        });
 
     function populateWifiDetailsTable(devices) {
         // Clear the table body
