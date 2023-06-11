@@ -244,13 +244,7 @@ $(document).ready(function() {
             console.error(`Request failed: ${textStatus} - ${errorThrown}`);
             console.error(`Response: ${jqXHR.responseText}`);
         });
-
-        .fail(function(jqXHR, textStatus, errorThrown) {
-            console.log('Failed to retrieve devices');
-            console.error(`Request failed: ${textStatus} - ${errorThrown}`);
-            console.error(`Response: ${jqXHR.responseText}`);
-        });
-
+    }
     function populateWifiDetailsTable(devices) {
         // Clear the table body
         const tbody = $('#wifi-details-table tbody');
