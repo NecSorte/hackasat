@@ -41,19 +41,20 @@ known_devices = {}
 # Define the set of seen MAC addresses
 seen_mac_addresses = set()
 
-# Define the function that modifies known_devices
 def add_or_update_device(device):
     # Acquire the lock before accessing known_devices
-    with lock:
+    with lock.acquire():
         # Do stuff with known_devices here
         known_devices[device['mac']] = device
+    lock.release()
 
-# Define the function that reads known_devices
 def get_known_devices():
     # Acquire the lock before accessing known_devices
-    with lock:
+    with lock.acquire():
         # Do stuff with known_devices here
-        return known_devices.copy()  # Return a copy of the known_devices dictionary
+        res = known_devices.copy()  # Return a copy of the known_devices dictionary
+    lock.release()
+    return res
 
 
 hasOUILookup = False
@@ -95,9 +96,13 @@ def adjust_antenna(state, action):
         azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
     return azim, elev
 
-# Function to continuously track a device
-def track_device(device):
-    global should_stop, current_state, allDevices
+# Define the function to continuously track a device
+def track_device(mac_address):
+    # allDevices changed to known_devices, as it seems allDevices is not defined anywhere in the script.
+    global should_stop, current_state, known_devices
+    device = known_devices.get(mac_address)
+    if device is None:
+        return
     while not should_stop:
         # Choose action
         if random.uniform(0, 1) < epsilon:
@@ -139,14 +144,14 @@ def start_tracking():
     mac_address = request.form.get('mac_address')
     if mac_address is None:
         return jsonify(success=False, message="mac_address is required"), 400
-    
+
     devices = get_known_devices()
-    device = next((dev for dev in devices if dev['mac'] == mac_address), None)
+    device = devices.get(mac_address)
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
-    
+
     Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
-    
+
     return jsonify(success=True)
 
 @app.route('/stop_tracking', methods=['POST'])
