@@ -254,41 +254,43 @@ def parse_wifi_scan_output(output):
     lines = output.split('\n')
 
     for index, line in enumerate(lines):
-        if "MAC Address" in line:
-            address = line.split()[2]
+        if "Cell " in line:
+            address = extract_value(line, 'Address: ', '\n')
             if address in devices:
                 continue
 
             device_data = {
                 "mac": address,
-                "essid": extract_value(lines, index, "SSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Privacy:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Signal level=(.*)"),
-                "signal": extract_value(lines, index, "Quality=(.*)"),
-                "noise": extract_value(lines, index, "Noise level=(.*)"),
-                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": extract_device_type(lines, index, "Address:(.*)"),
+                "essid": extract_value(line, 'ESSID:"', '"'),
+                "mode": extract_value(line, 'Mode:', '  '),
+                "channel": extract_value(line, 'Channel:', '  '),
+                "frequency": extract_value(line, 'Frequency:', '  '),
+                "quality": extract_value(line, 'Quality=', '  '),
+                "signal": extract_value(line, 'Signal level=', '  '),
+                "noise": extract_value(line, 'Noise level=', '  '),
+                "encryption": extract_value(line, 'Encryption key:', '  '),
+                "device_type": extract_device_type(lines, index, "Address:"),
             }
             devices[address] = device_data
 
     return devices
 
-def extract_value(lines, start_index, pattern):
-    regex = re.compile(pattern)
-    for i in range(start_index + 1, len(lines)):
-        match = regex.search(lines[i])
-        if match:
-            return match.group(1)
-    return None
+def extract_value(line, start_delimiter, end_delimiter):
+    start_index = line.find(start_delimiter)
+    if start_index == -1:
+        return None
+    end_index = line.find(end_delimiter, start_index + len(start_delimiter))
+    if end_index == -1:
+        return None
+    return line[start_index + len(start_delimiter):end_index].strip()
 
-def extract_device_type(lines, start_index, pattern):
-    regex = re.compile(pattern)
-    for i in range(start_index - 1, -1, -1):
-        match = regex.search(lines[i])
-        if match:
-            return match.group(1)
+def extract_device_type(lines, start_index, key):
+    for i in range(start_index + 1, len(lines)):
+        if key in lines[i]:
+            mac_address = extract_value(lines[i], 'Address: ', ' ')
+            if mac_address:
+                with manuf.MacParser() as parser:
+                    return parser.get_manuf(mac_address)
     return None
 
 @app.route('/array_scan', methods=['POST'])
