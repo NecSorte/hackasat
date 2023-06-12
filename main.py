@@ -248,29 +248,34 @@ def render_wifi_details_table(devices):
 
 def parse_wifi_scan_output(output):
     devices = {}
-    lines = output.split('\n')
+    device_lines = output.split("Cell ")
+    for device_line in device_lines[1:]:
+        device = {}
+        lines = device_line.split("\n")
+        device['mac'] = lines[0].split("Address: ")[1]
+        for line in lines[1:]:
+            if "ESSID:" in line:
+                device['essid'] = line.split("ESSID:\"")[1].split("\"")[0]
+            elif "Mode:" in line:
+                device['mode'] = line.split("Mode:")[1].strip()
+            elif "Channel:" in line:
+                device['channel'] = line.split("Channel:")[1].strip()
+            elif "Frequency:" in line:
+                device['frequency'] = line.split("Frequency:")[1].strip().split(" ")[0]
+            elif "Quality=" in line:
+                device['quality'] = line.split("Quality=")[1].split(" ")[0]
+            elif "Signal level=" in line:
+                device['signal'] = line.split("Signal level=")[1].split(" ")[0]
+            elif "Encryption key:" in line:
+                device['encryption'] = line.split("Encryption key:")[1].strip()
 
-    for index, line in enumerate(lines):
-        if "MAC Address" in line:
-            address = line.split()[2]
-            if address in devices:
-                continue
+        # Add placeholders for the 'noise' and 'device_type' fields
+        device['noise'] = "Placeholder"
+        device['device_type'] = "Placeholder"
 
-            device_data = {
-                "mac": address,
-                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Mode:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Quality=(.*)"),
-                "signal": extract_value(lines, index, "Signal level=(.*)"),
-                "noise": extract_value(lines, index, "Noise level=(.*)"),
-                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
-                "device_type": extract_value(lines, index, "IEEE (.*):"),
-            }
-            devices[address] = device_data
-
+        devices[device['mac']] = device
     return devices
+
 
 def extract_value(lines, start_index, pattern):
     regex = re.compile(pattern)
