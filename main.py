@@ -270,11 +270,11 @@ def parse_wifi_scan_output(output):
                 "quality": extract_value(line, 'Quality=', ' '),
                 "signal": extract_value(line, 'Signal level=', ' '),
                 "noise": extract_value(line, 'Noise level=', ' '),
+                "device_type": "",
             }
             devices[address] = device_data
 
     return devices
-
 def extract_encryption(line):
     encryption_key = extract_value(line, 'Encryption key:', '\n')
     if encryption_key == 'on':
