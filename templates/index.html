@@ -74,171 +74,171 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-
             </table>
         </div>
     </div>
 
-<script>
-$(document).ready(function() {
-    var intervalId;
-    var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
+    <script>
 
-    // State variables to keep track of whether wifi and array scanning are active
-    var wifiScanActive = false;
-    var arrayScanActive = false;
-    
-    $.get('/get_serial_ports', function(data) {
-        data.forEach(function(port) {
-            $('#port-selector').append($('<option>', {
-                value: port,
-                text: port
-            }));
-        });
-    });
+    $(document).ready(function() {
+        var intervalId;
+        var commands = ["frequency", "rate", "keys", "power", "txpower", "retry", "event", "auth", "wpakeys", "genie", "modulation"];
 
-    $.get('/get_network_interfaces', function(data) {
-        data.forEach(function(interface) {
-            $('#interface-selector').append($('<option>', {
-                value: interface,
-                text: interface
-            }));
-        });
-    });
+        // State variables to keep track of whether wifi and array scanning are active
+        var wifiScanActive = false;
+        var arrayScanActive = false;
 
-    $('#send-command-button').click(function() {
-        $.post('/send_command', {
-            port: $('#port-selector').val(),
-            command: $('#command-input').val()
-        }).done(function(data) {
-            $('#command-response').text(data.response);
-        }).fail(function() {
-            // handle error here
-            console.log('Error: Unable to send command');
-        });
-    });
-
-    // Array scan button click event handler
-    $('#array-scan-button').click(function() {
-        arrayScanActive = !arrayScanActive; // Toggle the array scan state
-
-        // Update the array scan button appearance
-        if (arrayScanActive) {
-            $(this).text('Stop Array Scan').addClass('btn-danger').removeClass('btn-primary');
-            arrayScan();
-        } else {
-            $(this).text('Start Array Scan').addClass('btn-primary').removeClass('btn-danger');
-            // Clear the timeout for the arrayScan function
-            clearTimeout(arrayScanTimeoutId);
-            // Reset currentAzimuth and currentElevation values
-            currentAzimuth = AZIMUTH_START;
-            currentElevation = ELEVATION_START;
-        }
-    });
-
-    // Define the start and end values for azimuth and elevation
-    const AZIMUTH_START = 160;
-    const AZIMUTH_END = 6400;
-    const ELEVATION_START = 650;
-    const ELEVATION_END = 1400;
-
-    // Define the current azimuth and elevation
-    var currentAzimuth = AZIMUTH_START;
-    var currentElevation = ELEVATION_START;
-
-    // Define the increment values for azimuth and elevation
-    var azimuthIncrement = 100;  // adjust as needed
-    var elevationIncrement = 50;  // adjust as needed
-
-    // Define the arrayScan timeout ID outside the arrayScan function
-    var arrayScanTimeoutId = null;
-
-    // Define the function to perform an array scan
-    function arrayScan() {
-        // Only execute the scan if the arrayScanActive flag is true
-        if (arrayScanActive) {
-            // Call the /array_scan endpoint
-            $.post('/array_scan', {
-                port: $('#port-selector').val()
-            }, function(data) {
-                populateWifiDetailsTable(data.devices);
+        $.get('/get_serial_ports', function(data) {
+            data.forEach(function(port) {
+                $('#port-selector').append($('<option>', {
+                    value: port,
+                    text: port
+                }));
             });
+        });
 
-            // Increment the azimuth and elevation for the next scan
-            currentAzimuth += azimuthIncrement;
-            currentElevation += elevationIncrement;
+        $.get('/get_network_interfaces', function(data) {
+            data.forEach(function(interface) {
+                $('#interface-selector').append($('<option>', {
+                    value: interface,
+                    text: interface
+                }));
+            });
+        });
 
-            // If we've reached the end of the azimuth range, reset to the start and move to the next elevation
-            if (currentAzimuth > AZIMUTH_END) {
+        $('#send-command-button').click(function() {
+            $.post('/send_command', {
+                port: $('#port-selector').val(),
+                command: $('#command-input').val()
+            }).done(function(data) {
+                $('#command-response').text(data.response);
+            }).fail(function() {
+                // handle error here
+                console.log('Error: Unable to send command');
+            });
+        });
+
+        // Array scan button click event handler
+        $('#array-scan-button').click(function() {
+            arrayScanActive = !arrayScanActive; // Toggle the array scan state
+
+            // Update the array scan button appearance
+            if (arrayScanActive) {
+                $(this).text('Stop Array Scan').addClass('btn-danger').removeClass('btn-primary');
+                arrayScan();
+            } else {
+                $(this).text('Start Array Scan').addClass('btn-primary').removeClass('btn-danger');
+                // Clear the timeout for the arrayScan function
+                clearTimeout(arrayScanTimeoutId);
+                // Reset currentAzimuth and currentElevation values
                 currentAzimuth = AZIMUTH_START;
-                currentElevation += elevationIncrement;
-            }
-
-            // If we've reached the end of the elevation range, reset to the start
-            if (currentElevation > ELEVATION_END) {
                 currentElevation = ELEVATION_START;
             }
-
-            // Call the function again after a delay to create a loop, saving the timeout ID
-            arrayScanTimeoutId = setTimeout(arrayScan, 5000);  // adjust delay as needed 1000 = 1 second
-        }
-    }
-
-    
-    $('#wifi-scan-button').click(function() {
-        wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
-
-        // Update the wifi scan button appearance
-        if (wifiScanActive) {
-            $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
-            wifiScan();
-            // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
-        } else {
-            $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
-            // If there's already an interval, clear it
-            if (intervalId) {
-                clearInterval(intervalId);
-                intervalId = null;
-            }
-        }
-    });
-    $('#wifi-details-table').on('click', '.track-button', function() {
-        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
-        console.log(`Tracking ${macAddress}`);
-    });
-
-    $('#wifi-details-table').on('click', '.crack-button', function() {
-        const essid = $(this).closest('tr').find('td:nth-child(3)').text();
-        const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
-        console.log(`Beginning to crack: ESSID: ${essid}, MAC: ${macAddress}`);
-    });
-
-    $('#wifi-details-table').on('click', '.ea-button', function() {
-        console.log('Conducting electronic attack');
-    });
-
-    // Define the function to perform a wifi scan
-    function wifiScan() {
-        // Call the /wifi_scan endpoint
-        $.post('/wifi_scan', {
-            interface: $('#interface-selector').val()
-        })
-        .done(function(data) {
-            console.log(data);
-            if(data && data.wifi_table_body) { // Check if wifi_table_body exists in response
-                // Update the wifi scan results div with the updated table body
-                $('#wifi-scan-results').html(data.wifi_table_body);
-            }
-        })
-        .fail(function(jqXHR, textStatus, errorThrown) {
-            console.log('Failed to retrieve devices');
-            console.error(`Request failed: ${textStatus} - ${errorThrown}`);
-            console.error(`Response: ${jqXHR.responseText}`);
         });
-    }
 
-});
-</script>
+        // Define the start and end values for azimuth and elevation
+        const AZIMUTH_START = 160;
+        const AZIMUTH_END = 6400;
+        const ELEVATION_START = 650;
+        const ELEVATION_END = 1400;
+
+        // Define the current azimuth and elevation
+        var currentAzimuth = AZIMUTH_START;
+        var currentElevation = ELEVATION_START;
+
+        // Define the increment values for azimuth and elevation
+        var azimuthIncrement = 100;  // adjust as needed
+        var elevationIncrement = 50;  // adjust as needed
+
+        // Define the arrayScan timeout ID outside the arrayScan function
+        var arrayScanTimeoutId = null;
+
+        // Define the function to perform an array scan
+        function arrayScan() {
+            // Only execute the scan if the arrayScanActive flag is true
+            if (arrayScanActive) {
+                // Call the /array_scan endpoint
+                $.post('/array_scan', {
+                    port: $('#port-selector').val()
+                }, function(data) {
+                    populateWifiDetailsTable(data.devices);
+                });
+
+                // Increment the azimuth and elevation for the next scan
+                currentAzimuth += azimuthIncrement;
+                currentElevation += elevationIncrement;
+
+                // If we've reached the end of the azimuth range, reset to the start and move to the next elevation
+                if (currentAzimuth > AZIMUTH_END) {
+                    currentAzimuth = AZIMUTH_START;
+                    currentElevation += elevationIncrement;
+                }
+
+                // If we've reached the end of the elevation range, reset to the start
+                if (currentElevation > ELEVATION_END) {
+                    currentElevation = ELEVATION_START;
+                }
+
+                // Call the function again after a delay to create a loop, saving the timeout ID
+                arrayScanTimeoutId = setTimeout(arrayScan, 5000);  // adjust delay as needed 1000 = 1 second
+            }
+        }
+
+
+        $('#wifi-scan-button').click(function() {
+            wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
+
+            // Update the wifi scan button appearance
+            if (wifiScanActive) {
+                $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
+                wifiScan();
+                // Set up the interval for subsequent scans
+                intervalId = setInterval(wifiScan, 5000); // 1000 ms = 1 second
+            } else {
+                $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
+                // If there's already an interval, clear it
+                if (intervalId) {
+                    clearInterval(intervalId);
+                    intervalId = null;
+                }
+            }
+        });
+        $('#wifi-details-table').on('click', '.track-button', function() {
+            const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+            console.log(`Tracking ${macAddress}`);
+        });
+
+        $('#wifi-details-table').on('click', '.crack-button', function() {
+            const essid = $(this).closest('tr').find('td:nth-child(3)').text();
+            const macAddress = $(this).closest('tr').find('td:nth-child(2)').text();
+            console.log(`Beginning to crack: ESSID: ${essid}, MAC: ${macAddress}`);
+        });
+
+        $('#wifi-details-table').on('click', '.ea-button', function() {
+            console.log('Conducting electronic attack');
+        });
+
+        // Define the function to perform a wifi scan
+        function wifiScan() {
+            // Call the /wifi_scan endpoint
+            $.post('/wifi_scan', {
+                interface: $('#interface-selector').val()
+            })
+            .done(function(data) {
+                console.log(data);
+                if(data && data.wifi_table_body) { // Check if wifi_table_body exists in response
+                    // Update the wifi scan results div with the updated table body
+                    $('#wifi-scan-results').html(data.wifi_table_body);
+                }
+            })
+            .fail(function(jqXHR, textStatus, errorThrown) {
+                console.log('Failed to retrieve devices');
+                console.error(`Request failed: ${textStatus} - ${errorThrown}`);
+                console.error(`Response: ${jqXHR.responseText}`);
+            });
+        }
+
+    });
+    </script>
 </body>
 </html>
