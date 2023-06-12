@@ -258,8 +258,6 @@ def parse_wifi_scan_output(output):
                 device['essid'] = line.split("ESSID:\"")[1].split("\"")[0]
             elif "Mode:" in line:
                 device['mode'] = line.split("Mode:")[1].strip()
-            elif "Channel:" in line:
-                device['channel'] = line.split("Channel:")[1].strip()
             elif "Frequency:" in line:
                 device['frequency'] = line.split("Frequency:")[1].strip().split(" ")[0]
             elif "Quality=" in line:
@@ -269,12 +267,16 @@ def parse_wifi_scan_output(output):
             elif "Encryption key:" in line:
                 device['encryption'] = line.split("Encryption key:")[1].strip()
 
-        # Add placeholders for the 'noise' and 'device_type' fields
+        # Add placeholders for the 'channel', 'noise' and 'device_type' fields
+        device['channel'] = "Placeholder"
         device['noise'] = "Placeholder"
         device['device_type'] = "Placeholder"
-
+        if "Channel:" in line:
+            device['channel'] = line.split("Channel:")[1].strip()
+        
         devices[device['mac']] = device
     return devices
+
 
 
 def extract_value(lines, start_index, pattern):
