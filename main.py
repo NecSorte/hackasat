@@ -39,26 +39,12 @@ known_devices = {}
 # Define the set of seen MAC addresses
 seen_mac_addresses = set()
 
-def add_or_update_device(new_device):
+# Define the function that modifies known_devices
+def add_or_update_device(device):
     # Acquire the lock before accessing known_devices
     with lock:
-        # Check if we've seen this MAC address before
-        if new_device['mac'] in seen_mac_addresses:
-            # The device already exists in the dictionary. Update it.
-            existing_device = known_devices.get(new_device['mac'])
-
-            # Update fields in existing_device if they are present in new_device
-            for field in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']:
-                existing_device[field] = new_device.get(field, existing_device.get(field, None))
-        else:
-            # This is a new device. Add it to the dictionary.
-            if all(key in new_device for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency']):
-                known_devices[new_device['mac']] = new_device
-                # Add the MAC address to the set of seen MAC addresses
-                seen_mac_addresses.add(new_device['mac'])
-            else:
-                missing_keys = [key for key in ['ssid', 'signal', 'channel', 'lastSeen', 'encryption', 'frequency'] if key not in new_device]
-                print(f"Warning: Cannot add new_device to known_devices due to missing keys: {missing_keys}")
+        # Do stuff with known_devices here
+        known_devices[device['mac']] = device
 
 # Define the function that reads known_devices
 def get_known_devices():
@@ -67,13 +53,13 @@ def get_known_devices():
         # Do stuff with known_devices here
         return known_devices.copy()  # Return a copy of the known_devices dictionary
 
-has_oui_lookup = False
+hasOUILookup = False
 
 try:
     from manuf import manuf
-    has_oui_lookup = True
-except ImportError:
-    has_oui_lookup = False
+    hasOUILookup = True
+except:
+    hasOUILookup = False
 
 def get_network_interfaces():
     result = os.popen('ip -o link show | awk \'{print $2}\'').read()
@@ -104,9 +90,12 @@ def adjust_antenna(state, action):
         azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
     return azim, elev
 
-# Function to continuously track a device
-def track_device(device):
-    global should_stop, current_state, allDevices
+# Define the function to continuously track a device
+def track_device(mac_address):
+    global should_stop, current_state, known_devices
+    device = known_devices.get(mac_address)
+    if device is None:
+        return
     while not should_stop:
         # Choose action
         if random.uniform(0, 1) < epsilon:
@@ -120,11 +109,11 @@ def track_device(device):
         os.system(f"/send_commands elev {elev}")
         time.sleep(1)  # Wait for a bit before checking again
 
-        # Find the device in the allDevices array
-        device = next((dev for dev in allDevices if dev['mac'] == device['mac']), None)
+        # Find the device in the known_devices dictionary
+        device = known_devices.get(mac_address)
         if device is None:
             continue
-        
+
         # Get the new signal strength from the device
         new_signal_strength = device.get('signal')
         reward = new_signal_strength if new_signal_strength else -100
@@ -132,7 +121,7 @@ def track_device(device):
         # Update Q-table
         old_value = q_table[current_state, action]
         next_max = np.max(q_table[current_state])
-        
+
         new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
         q_table[current_state, action] = new_value
 
@@ -148,14 +137,14 @@ def start_tracking():
     mac_address = request.form.get('mac_address')
     if mac_address is None:
         return jsonify(success=False, message="mac_address is required"), 400
-    
+
     devices = get_known_devices()
-    device = next((dev for dev in devices if dev['mac'] == mac_address), None)
+    device = devices.get(mac_address)
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
-    
+
     Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
-    
+
     return jsonify(success=True)
 
 @app.route('/stop_tracking', methods=['POST'])
@@ -163,7 +152,7 @@ def stop_tracking():
     global should_stop
     should_stop = True
     return jsonify(success=True)
-    
+
 @app.route('/get_serial_ports', methods=['GET'])
 def get_serial_ports_endpoint():
     return jsonify(get_serial_ports())
@@ -182,12 +171,12 @@ def index():
 def handle_send_command():
     port = request.form['port']
     command = request.form['command']
-    
+
     ser = serial.Serial(port, 9600, timeout=1)
     send_command(ser, command)
     response = ser.read(1024).decode()
     ser.close()
-    
+
     return jsonify(response=response)
 
 @app.route('/iwlist', methods=['POST'])
@@ -201,17 +190,18 @@ def handle_iwlist():
 def handle_start_scan():
     port = request.form['port']
     ser = serial.Serial(port, 9600, timeout=1)
-    
+
     for azim in range(170, 6301, 3000):
         command = f'G1 X{azim}'
         send_command(ser, command)
         for elev in range(650, 1401, 500):
             command = f'G1 Y{elev}'
             send_command(ser, command)
-    
+
     ser.close()
     return jsonify(success=True)
 
+# Update the /wifi_scan route to populate the Wi-Fi details table
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     try:
@@ -222,72 +212,118 @@ def handle_wifi_scan():
         devices = parse_wifi_scan_output(output)
         for device in devices.values():
             add_or_update_device(device)
-        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, 
-        return jsonify(devices=list(get_known_devices().values()))
+        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, print the devices
+        wifi_table_body = populate_wifi_details_table(get_known_devices().values())
+        return jsonify(success=True, wifi_table_body=wifi_table_body)
     except Exception as e:
         print(e)  # Debug line
-        return jsonify(error=str(e)), 500
+        return jsonify(success=False, error=str(e)), 500
 
-def extract_value_for_key(lines, start_index, key):
-    for i in range(start_index + 1, len(lines)):
-        if key in lines[i]:
-            return lines[i].split(":")[-1].strip()
-    return None
+# Define the function to populate the Wi-Fi details table
+def populate_wifi_details_table(devices):
+    # Clear the table body
+    tbody = ''
+
+    # Iterate over the devices and generate table rows
+    for device in devices:
+        row = f'''
+        <tr>
+            <td>
+                <button class="btn btn-primary track-button">Track</button>
+                <button class="btn btn-danger crack-button">Crack</button>
+                <button class="btn btn-warning ea-button">EA</button>
+            </td>
+            <td>{device['mac']}</td>
+            <td>{device['essid']}</td>
+            <td>{device['mode']}</td>
+            <td>{device['channel']}</td>
+            <td>{device['frequency']}</td>
+            <td>{device['quality']}</td>
+            <td>{device['signal']}</td>
+            <td>{device['noise']}</td>
+            <td>{device['encryption']}</td>
+            <td>{device['device_type']}</td>
+        </tr>
+        '''
+        tbody += row
+
+    return tbody
 
 def parse_wifi_scan_output(output):
     devices = {}
     lines = output.split('\n')
 
     for index, line in enumerate(lines):
-        if "Address" in line:
-            address = line.split()[-1]
+        if "MAC Address" in line:
+            address = line.split()[2]
             if address in devices:
                 continue
 
             device_data = {
-                "Address": address,
-                "ESSID": extract_value_for_key(lines, index, "ESSID"),
-                "Protocol": extract_value_for_key(lines, index, "Protocol"),
-                "Mode": extract_value_for_key(lines, index, "Mode"),
-                "Frequency": extract_value_for_key(lines, index, "Frequency"),
-                "Encryption key": extract_value_for_key(lines, index, "Encryption key"),
-                "IE": extract_value_for_key(lines, index, "IE:"),
-                "Quality": extract_value_for_key(lines, index, "Quality"),
-                "Signal level": extract_value_for_key(lines, index, "Signal level"),
+                "mac": address,
+                "essid": extract_value(lines, index, "SSID:\"(.*)\""),
+                "mode": extract_value(lines, index, "Privacy:(.*)"),
+                "channel": extract_value(lines, index, "Channel:(.*)"),
+                "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                "quality": extract_value(lines, index, "Signal level=(.*)"),
+                "signal": extract_value(lines, index, "Quality=(.*)"),
+                "noise": extract_value(lines, index, "Noise level=(.*)"),
+                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                "device_type": extract_device_type(lines, index, "Address:(.*)"),
             }
             devices[address] = device_data
 
     return devices
 
+def extract_value(lines, start_index, pattern):
+    regex = re.compile(pattern)
+    for i in range(start_index + 1, len(lines)):
+        match = regex.search(lines[i])
+        if match:
+            return match.group(1)
+    return None
+
+def extract_device_type(lines, start_index, pattern):
+    regex = re.compile(pattern)
+    for i in range(start_index - 1, -1, -1):
+        match = regex.search(lines[i])
+        if match:
+            return match.group(1)
+    return None
+
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
     port = request.form['port']
     ser = serial.Serial(port, 9600, timeout=1)
-    
+
     azim_min = 170
     azim_max = 6301
+    azim_step = 3000
+
     elev_min = 650
     elev_max = 1401
-    step = 200
+    elev_step = 500
 
-    direction = 1
-    for azim in range(azim_min, azim_max + 1, step):
-        command = f'azim {azim}'
+    for azim in range(azim_min, azim_max, azim_step):
+        command = f'G1 X{azim}'
         send_command(ser, command)
-        time.sleep(1)  # Pause for one second
-
-        elev_values = list(range(elev_min, elev_max + 1, step))
-        if direction == -1:
-            elev_values = elev_values[::-1]  # Reverse the order of the elevations
-        for elev in elev_values:
-            command = f'elev {elev}'
+        for elev in range(elev_min, elev_max, elev_step):
+            command = f'G1 Y{elev}'
             send_command(ser, command)
-            time.sleep(1)  # Pause for one second
-        
-        direction *= -1
+            time.sleep(0.2)  # Add a small delay between positions
+            output = os.popen(f'sudo iwlist wlan0 scan').read()
+            devices = parse_wifi_scan_output(output)
+            for device in devices.values():
+                add_or_update_device(device)
 
     ser.close()
     return jsonify(success=True)
 
+# Define the function to start the Flask app
+def start_app():
+    app.run(host='0.0.0.0', port=5000)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Start the Flask app in a separate thread
+    t = threading.Thread(target=start_app)
+    t.start()
