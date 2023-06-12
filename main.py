@@ -268,22 +268,23 @@ def parse_wifi_scan_output(output):
     lines = output.split('\n')
 
     for index, line in enumerate(lines):
-        if "MAC Address" in line:
-            address = line.split()[2]
+        if "Cell " in line:
+            address = extract_value(line, 'Address: ', '\n')
             if address in devices:
                 continue
 
             device_data = {
                 "mac": address,
-                "essid": extract_value(lines, index, "SSID:\"(.*)\""),
-                "mode": extract_value(lines, index, "Privacy:(.*)"),
-                "channel": extract_value(lines, index, "Channel:(.*)"),
-                "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Signal Strength:(.*)"),
-                "signal": extract_value(lines, index, "Bandwidth:(.*)"),
-                "noise": None,  # It seems like this data is not provided
-                "encryption": extract_value(lines, index, "Security:(.*)"),
-                "device_type": extract_value(lines, index, "MANUF:(.*)"),
+                "essid": extract_value(line, 'ESSID:"', '"'),
+                "protocol": extract_value(line, 'Protocol:', '\n'),
+                "mode": extract_value(line, 'Mode:', '\n'),
+                "frequency": extract_value(line, 'Frequency:', ' GHz'),
+                "channel": extract_value(line, 'Channel ', ')'),
+                "encryption": extract_encryption(line),
+                "quality": extract_value(line, 'Quality=', ' '),
+                "signal": extract_value(line, 'Signal level=', ' '),
+                "noise": extract_value(line, 'Noise level=', ' '),
+                "device_type": "",
             }
             devices[address] = device_data
 
