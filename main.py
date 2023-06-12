@@ -269,6 +269,7 @@ def parse_wifi_scan_output(output):
                 "encryption": extract_encryption(line),
                 "quality": extract_value(line, 'Quality=', ' '),
                 "signal": extract_value(line, 'Signal level=', ' '),
+                "noise": extract_value(line, 'Noise level=', ' '),
             }
             devices[address] = device_data
 
