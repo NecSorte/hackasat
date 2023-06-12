@@ -183,6 +183,42 @@
             }
         }
 
+        function populateWifiDetailsTable(devices) {
+            // Clear the existing table data
+            $("#wifi-details-table tbody").empty();
+
+            // Loop through the devices
+            devices.forEach(function(device) {
+                // Create a new table row
+                var tr = $("<tr></tr>");
+
+                // Create the action buttons
+                var actionButtons = `
+                    <td>
+                        <button class="btn btn-primary track-button">Track</button>
+                        <button class="btn btn-danger crack-button">Crack</button>
+                        <button class="btn btn-warning ea-button">EA</button>
+                    </td>
+                `;
+
+                // Append the action buttons and device details to the row
+                tr.append(actionButtons);
+                tr.append("<td>" + device.mac + "</td>");
+                tr.append("<td>" + device.essid + "</td>");
+                tr.append("<td>" + device.mode + "</td>");
+                tr.append("<td>" + device.channel + "</td>");
+                tr.append("<td>" + device.frequency + "</td>");
+                tr.append("<td>" + device.quality + "</td>");
+                tr.append("<td>" + device.signal + "</td>");
+                tr.append("<td>" + device.noise + "</td>");
+                tr.append("<td>" + device.encryption + "</td>");
+                tr.append("<td>" + device.device_type + "</td>");
+
+                // Append the row to the table
+                $("#wifi-details-table tbody").append(tr);
+            });
+        }
+
 
         $('#wifi-scan-button').click(function() {
             wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
