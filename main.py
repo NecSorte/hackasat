@@ -183,8 +183,7 @@ def handle_send_command():
 @app.route('/iwlist', methods=['POST'])
 def handle_iwlist():
     interface = request.form['interface']
-    command = request.form['command']
-    output = os.popen(f'sudo iwlist {interface} {command}').read()
+    output = os.popen(f'sudo iwlist {interface} scan').read()
     return jsonify(output=output)
 
 @app.route('/start_scan', methods=['POST'])
