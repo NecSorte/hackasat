@@ -226,9 +226,8 @@
             })
             .done(function(data) {
                 console.log(data);
-                if(data && data.wifi_table_body) { // Check if wifi_table_body exists in response
-                    // Update the wifi scan results div with the updated table body
-                    $('#wifi-scan-results').html(data.wifi_table_body);
+                if (data && data.devices) {
+                    populateWifiDetailsTable(data.devices);
                 }
             })
             .fail(function(jqXHR, textStatus, errorThrown) {
