@@ -262,18 +262,29 @@ def parse_wifi_scan_output(output):
             device_data = {
                 "mac": address,
                 "essid": extract_value(line, 'ESSID:"', '"'),
-                "mode": extract_value(line, 'Mode:', '  '),
-                "channel": extract_value(line, 'Channel:', '  '),
-                "frequency": extract_value(line, 'Frequency:', '  '),
-                "quality": extract_value(line, 'Quality=', '  '),
-                "signal": extract_value(line, 'Signal level=', '  '),
-                "noise": extract_value(line, 'Noise level=', '  '),
-                "encryption": extract_value(line, 'Encryption key:', '  '),
-                "device_type": extract_device_type(lines, index, "Address:"),
+                "protocol": extract_value(line, 'Protocol:', '\n'),
+                "mode": extract_value(line, 'Mode:', '\n'),
+                "frequency": extract_value(line, 'Frequency:', ' GHz'),
+                "channel": extract_value(line, 'Channel ', ')'),
+                "encryption": extract_encryption(line),
+                "quality": extract_value(line, 'Quality=', ' '),
+                "signal": extract_value(line, 'Signal level=', ' '),
             }
             devices[address] = device_data
 
     return devices
+
+def extract_encryption(line):
+    encryption_key = extract_value(line, 'Encryption key:', '\n')
+    if encryption_key == 'on':
+        wpa_version = extract_value(line, 'WPA Version ', '\n')
+        wpa2_version = extract_value(line, 'IEEE 802.11i/WPA2 Version ', '\n')
+        if wpa_version or wpa2_version:
+            return 'WPA/WPA2'
+        else:
+            return 'WEP'
+    else:
+        return 'Undetermined'
 
 def extract_value(line, start_delimiter, end_delimiter):
     start_index = line.find(start_delimiter)
