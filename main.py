@@ -247,36 +247,53 @@ def render_wifi_details_table(devices):
     return tbody
 
 def parse_wifi_scan_output(output):
-    devices = {}
-    device_lines = output.split("Cell ")
-    for device_line in device_lines[1:]:
-        device = {}
-        lines = device_line.split("\n")
-        device['mac'] = lines[0].split("Address: ")[1]
-        for line in lines[1:]:
-            if "ESSID:" in line:
-                device['essid'] = line.split("ESSID:\"")[1].split("\"")[0]
-            elif "Mode:" in line:
-                device['mode'] = line.split("Mode:")[1].strip()
-            elif "Frequency:" in line:
-                device['frequency'] = line.split("Frequency:")[1].strip().split(" ")[0]
-            elif "Quality=" in line:
-                device['quality'] = line.split("Quality=")[1].split(" ")[0]
-            elif "Signal level=" in line:
-                device['signal'] = line.split("Signal level=")[1].split(" ")[0]
-            elif "Encryption key:" in line:
-                device['encryption'] = line.split("Encryption key:")[1].strip()
+    wifi_networks = []
+    network = {}
 
-        # Add placeholders for the 'channel', 'noise' and 'device_type' fields
-        device['channel'] = "Placeholder"
-        device['noise'] = "Placeholder"
-        device['device_type'] = "Placeholder"
-        if "Channel:" in line:
-            device['channel'] = line.split("Channel:")[1].strip()
+    for line in output.split("\n"):
+        if "Cell" in line and network:
+            wifi_networks.append(network)
+            network = {}
         
-        devices[device['mac']] = device
-    return devices
+        # MAC Address
+        match = re.search('Address: (.*)', line)
+        if match:
+            network['mac_address'] = match.group(1)
 
+        # ESSID
+        match = re.search('ESSID:"(.*)"', line)
+        if match:
+            network['essid'] = match.group(1)
+
+        # Mode
+        match = re.search('Mode:(.*)', line)
+        if match:
+            network['mode'] = match.group(1).strip()
+            
+        # Frequency
+        match = re.search('Frequency:(.* GHz)', line)
+        if match:
+            network['frequency'] = match.group(1).strip()
+
+        # Quality
+        match = re.search('Quality=(.*)', line)
+        if match:
+            network['quality'] = match.group(1).strip()
+
+        # Signal level
+        match = re.search('Signal level=(.*)', line)
+        if match:
+            network['signal_level'] = match.group(1).strip()
+
+        # Encryption
+        match = re.search('Encryption key:(.*)', line)
+        if match:
+            network['encryption'] = match.group(1).strip()
+
+    if network:
+        wifi_networks.append(network)
+
+    return wifi_networks
 
 
 def extract_value(lines, start_index, pattern):
