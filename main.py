@@ -159,6 +159,7 @@ def get_serial_ports_endpoint():
 
 @app.route('/get_network_interfaces', methods=['GET'])
 def get_network_interfaces_endpoint():
+    interfaces = get_network_interfaces()
     return jsonify(get_network_interfaces())
 
 @app.route('/')
@@ -201,7 +202,6 @@ def handle_start_scan():
     ser.close()
     return jsonify(success=True)
 
-# Update the /wifi_scan route to populate the Wi-Fi details table
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     try:
