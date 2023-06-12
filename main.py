@@ -202,6 +202,7 @@ def handle_start_scan():
     ser.close()
     return jsonify(success=True)
 
+# Update the /wifi_scan route to populate the Wi-Fi details table
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     try:
@@ -218,7 +219,7 @@ def handle_wifi_scan():
     except Exception as e:
         print(e)  # Debug line
         return jsonify(success=False, error=str(e)), 500
-    
+
 # Define the function to populate the Wi-Fi details table
 def populate_wifi_details_table(devices):
     # Clear the table body
@@ -250,57 +251,30 @@ def populate_wifi_details_table(devices):
     return tbody
 
 def parse_wifi_scan_output(output):
-    devices = []
-    lines = output.strip().split('\n')
+    devices = {}
+    lines = output.split('\n')
 
-    i = 0
-    while i < len(lines):
-        line = lines[i].strip()
-        if line.startswith('Cell'):
-            device = {}
-            while i < len(lines) and not lines[i].strip().startswith('Cell'):
-                line = lines[i].strip()
-                if line.startswith('Address:'):
-                    device['address'] = line.split('Address:')[1].strip()
-                elif line.startswith('ESSID:'):
-                    device['essid'] = line.split('ESSID:')[1].strip().strip('"')
-                elif line.startswith('Protocol:'):
-                    device['protocol'] = line.split('Protocol:')[1].strip()
-                elif line.startswith('Mode:'):
-                    device['mode'] = line.split('Mode:')[1].strip()
-                elif line.startswith('Frequency:'):
-                    device['frequency'] = line.split('Frequency:')[1].split(' ')[0].strip()
-                elif line.startswith('Encryption key:'):
-                    device['encryption_key'] = line.split('Encryption key:')[1].strip()
-                elif line.startswith('Quality='):
-                    quality_line = line.split('Quality=')[1]
-                    device['quality'] = quality_line.split('/')[0].strip()
-                    device['signal_level'] = quality_line.split('Signal level=')[1].split('/')[0].strip()
-                elif line.startswith('IE:'):
-                    if 'ie' not in device:
-                        device['ie'] = []
-                    device['ie'].append(line)
-                i += 1
-            devices.append(device)
-        else:
-            i += 1
+    for index, line in enumerate(lines):
+        if "Cell " in line:
+            address = extract_value(line, 'Address: ', '\n')
+            if address in devices:
+                continue
+
+            device_data = {
+                "mac": address,
+                "essid": extract_value(line, 'ESSID:"', '"'),
+                "mode": extract_value(line, 'Mode:', '  '),
+                "channel": extract_value(line, 'Channel:', '  '),
+                "frequency": extract_value(line, 'Frequency:', '  '),
+                "quality": extract_value(line, 'Quality=', '  '),
+                "signal": extract_value(line, 'Signal level=', '  '),
+                "noise": extract_value(line, 'Noise level=', '  '),
+                "encryption": extract_value(line, 'Encryption key:', '  '),
+                "device_type": extract_device_type(lines, index, "Address:"),
+            }
+            devices[address] = device_data
 
     return devices
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
-
-def extract_encryption(line):
-    encryption_key = extract_value(line, 'Encryption key:', '\n')
-    if encryption_key == 'on':
-        wpa_version = extract_value(line, 'WPA Version ', '\n')
-        wpa2_version = extract_value(line, 'IEEE 802.11i/WPA2 Version ', '\n')
-        if wpa_version or wpa2_version:
-            return 'WPA/WPA2'
-        else:
-            return 'WEP'
-    else:
-        return 'Undetermined'
 
 def extract_value(line, start_delimiter, end_delimiter):
     start_index = line.find(start_delimiter)
@@ -319,6 +293,7 @@ def extract_device_type(lines, start_index, key):
                 with manuf.MacParser() as parser:
                     return parser.get_manuf(mac_address)
     return None
+
 
 @app.route('/array_scan', methods=['POST'])
 def handle_array_scan():
