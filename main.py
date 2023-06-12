@@ -129,7 +129,6 @@ def track_device(mac_address):
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
 # Route to start tracking
-# Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
     global should_stop
@@ -159,8 +158,7 @@ def get_serial_ports_endpoint():
 
 @app.route('/get_network_interfaces', methods=['GET'])
 def get_network_interfaces_endpoint():
-    interfaces = get_network_interfaces()
-    return jsonify(interfaces)
+    return jsonify(get_network_interfaces())
 
 @app.route('/')
 def index():
@@ -202,7 +200,6 @@ def handle_start_scan():
     ser.close()
     return jsonify(success=True)
 
-# Update the /wifi_scan route to populate the Wi-Fi details table
 @app.route('/wifi_scan', methods=['POST'])
 def handle_wifi_scan():
     try:
@@ -213,15 +210,14 @@ def handle_wifi_scan():
         devices = parse_wifi_scan_output(output)
         for device in devices.values():
             add_or_update_device(device)
-        print(jsonify(devices=list(get_known_devices().values())))  # Debug line, print the devices
-        wifi_table_body = populate_wifi_details_table(get_known_devices().values())
+        wifi_table_body = render_wifi_details_table(get_known_devices().values())
         return jsonify(success=True, wifi_table_body=wifi_table_body)
     except Exception as e:
         print(e)  # Debug line
         return jsonify(success=False, error=str(e)), 500
 
-# Define the function to populate the Wi-Fi details table
-def populate_wifi_details_table(devices):
+# Define the function to render the Wi-Fi details table
+def render_wifi_details_table(devices):
     # Clear the table body
     tbody = ''
 
@@ -255,79 +251,34 @@ def parse_wifi_scan_output(output):
     lines = output.split('\n')
 
     for index, line in enumerate(lines):
-        if "Cell " in line:
-            address = extract_value(line, 'Address: ', '\n')
+        if "MAC Address" in line:
+            address = line.split()[2]
             if address in devices:
                 continue
 
             device_data = {
                 "mac": address,
-                "essid": extract_value(line, 'ESSID:"', '"'),
-                "mode": extract_value(line, 'Mode:', '  '),
-                "channel": extract_value(line, 'Channel:', '  '),
-                "frequency": extract_value(line, 'Frequency:', '  '),
-                "quality": extract_value(line, 'Quality=', '  '),
-                "signal": extract_value(line, 'Signal level=', '  '),
-                "noise": extract_value(line, 'Noise level=', '  '),
-                "encryption": extract_value(line, 'Encryption key:', '  '),
-                "device_type": extract_device_type(lines, index, "Address:"),
+                "essid": extract_value(lines, index, "ESSID:\"(.*)\""),
+                "mode": extract_value(lines, index, "Mode:(.*)"),
+                "channel": extract_value(lines, index, "Channel:(.*)"),
+                "frequency": extract_value(lines, index, "Frequency:(.*)"),
+                "quality": extract_value(lines, index, "Quality=(.*)"),
+                "signal": extract_value(lines, index, "Signal level=(.*)"),
+                "noise": extract_value(lines, index, "Noise level=(.*)"),
+                "encryption": extract_value(lines, index, "Encryption key:(.*)"),
+                "device_type": extract_value(lines, index, "IEEE (.*):"),
             }
             devices[address] = device_data
 
     return devices
 
-def extract_value(line, start_delimiter, end_delimiter):
-    start_index = line.find(start_delimiter)
-    if start_index == -1:
-        return None
-    end_index = line.find(end_delimiter, start_index + len(start_delimiter))
-    if end_index == -1:
-        return None
-    return line[start_index + len(start_delimiter):end_index].strip()
-
-def extract_device_type(lines, start_index, key):
+def extract_value(lines, start_index, pattern):
+    regex = re.compile(pattern)
     for i in range(start_index + 1, len(lines)):
-        if key in lines[i]:
-            mac_address = extract_value(lines[i], 'Address: ', ' ')
-            if mac_address:
-                with manuf.MacParser() as parser:
-                    return parser.get_manuf(mac_address)
+        match = regex.search(lines[i])
+        if match:
+            return match.group(1)
     return None
 
-
-@app.route('/array_scan', methods=['POST'])
-def handle_array_scan():
-    port = request.form['port']
-    ser = serial.Serial(port, 9600, timeout=1)
-
-    azim_min = 170
-    azim_max = 6301
-    azim_step = 3000
-
-    elev_min = 650
-    elev_max = 1401
-    elev_step = 500
-
-    for azim in range(azim_min, azim_max, azim_step):
-        command = f'G1 X{azim}'
-        send_command(ser, command)
-        for elev in range(elev_min, elev_max, elev_step):
-            command = f'G1 Y{elev}'
-            send_command(ser, command)
-            time.sleep(0.2)  # Add a small delay between positions
-            output = os.popen(f'sudo iwlist {interface} scan').read()
-            devices = parse_wifi_scan_output(output)
-            for device in devices.values():
-                add_or_update_device(device)
-
-    ser.close()
-    return jsonify(success=True)
-
-# Define the function to start the Flask app
-def start_app():
-    app.run(host='0.0.0.0', port=5000)
-
 if __name__ == '__main__':
-    # Start the Flask app in a separate thread
-    t = threading.Thread(target=start_app)
-    t.start()
+    app.run(host='0.0.0.0', port=5000, debug=True)
