@@ -160,7 +160,7 @@ def get_serial_ports_endpoint():
 @app.route('/get_network_interfaces', methods=['GET'])
 def get_network_interfaces_endpoint():
     interfaces = get_network_interfaces()
-    return jsonify(get_network_interfaces())
+    return jsonify(interfaces)
 
 @app.route('/')
 def index():
@@ -183,7 +183,8 @@ def handle_send_command():
 @app.route('/iwlist', methods=['POST'])
 def handle_iwlist():
     interface = request.form['interface']
-    output = os.popen(f'sudo iwlist {interface} scan').read()
+    command = request.form['command']
+    output = os.popen(f'sudo iwlist {interface} {command}').read()
     return jsonify(output=output)
 
 @app.route('/start_scan', methods=['POST'])
@@ -274,6 +275,7 @@ def parse_wifi_scan_output(output):
             devices[address] = device_data
 
     return devices
+
 def extract_encryption(line):
     encryption_key = extract_value(line, 'Encryption key:', '\n')
     if encryption_key == 'on':
@@ -324,7 +326,7 @@ def handle_array_scan():
             command = f'G1 Y{elev}'
             send_command(ser, command)
             time.sleep(0.2)  # Add a small delay between positions
-            output = os.popen(f'sudo iwlist wlan0 scan').read()
+            output = os.popen(f'sudo iwlist {interface} scan').read()
             devices = parse_wifi_scan_output(output)
             for device in devices.values():
                 add_or_update_device(device)
