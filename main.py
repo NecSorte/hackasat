@@ -189,18 +189,23 @@ def track_device(mac_address, ser):
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
-# Function to adjust the antenna based on the current state and action
-def adjust_antenna(state, action, ser):
-    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
-    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
-    if action % 2 == 1:
-        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
-    
-    # Send commands to the antenna
-    send_command(ser, f'azim {int(azim)}')
-    send_command(ser, f'elev {int(elev)}')
-    
-    return int(azim), int(elev)
+# Route to start tracking
+# Update the /track_device route to track one MAC address
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop, ser  # Add ser to global variables
+    should_stop = False
+    mac_address = request.form.get('mac_address')
+    if mac_address is None:
+        return jsonify(success=False, message="mac_address is required"), 400
+
+    device = known_devices.get(mac_address)
+    if device is None:
+        return jsonify(success=False, message="Device not found"), 404
+
+    Thread(target=track_device, args=(mac_address, ser)).start()  # Track the MAC address
+
+    return jsonify(success=True)
 
 # Route to start tracking
 # Update the /track_device route to track one MAC address
