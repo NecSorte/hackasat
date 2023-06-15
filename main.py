@@ -166,8 +166,8 @@ def track_device(mac_address):
 
         # Take action and get reward
         azim, elev = adjust_antenna(current_state, action)
-        os.system(f"/send_commands azim {azim}")
-        os.system(f"/send_commands elev {elev}")
+        send_command(ser, f'azim {azim}')
+        send_command(ser, f'elev {elev}')
         time.sleep(1)  # Wait for a bit before checking again
 
         # Find the device in the known_devices array
@@ -189,14 +189,19 @@ def track_device(mac_address):
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
-# Function to get the new position of the antenna based on the current state and action
+# Function to adjust the antenna based on the current state and action
 def adjust_antenna(state, action):
     azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
     elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
     if action % 2 == 1:
         azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    
+    # Send commands to the antenna
+    send_command(ser, f'azim {int(azim)}')
+    send_command(ser, f'elev {int(elev)}')
+    
     return int(azim), int(elev)
-
+    
 # Route to start tracking
 # Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
