@@ -207,24 +207,6 @@ def start_tracking():
 
     return jsonify(success=True)
 
-# Route to start tracking
-# Update the /track_device route to track one MAC address
-@app.route('/track_device', methods=['POST'])
-def start_tracking():
-    global should_stop
-    should_stop = False
-    mac_address = request.form.get('mac_address')
-    if mac_address is None:
-        return jsonify(success=False, message="mac_address is required"), 400
-
-    device = known_devices.get(mac_address)
-    if device is None:
-        return jsonify(success=False, message="Device not found"), 404
-
-    Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
-
-    return jsonify(success=True)
-
 @app.route('/stop_tracking', methods=['POST'])
 def stop_tracking():
     global should_stop
