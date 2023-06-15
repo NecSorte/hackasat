@@ -14,6 +14,22 @@ app = Flask(__name__)
 
 known_devices = {}  # Global known devices dictionary
 
+# Constants
+AZIMUTH_RANGE = (160, 6400)
+ELEVATION_RANGE = (650, 1450)
+
+# Q-Learning parameters
+alpha = 0.5
+gamma = 0.95
+epsilon = 0.1
+state_space = 10
+action_space = 4
+q_table = np.zeros((state_space, action_space))
+
+# Global state
+current_state = 0
+should_stop = False
+
 hasOUILookup = False
 
 try:
@@ -135,7 +151,6 @@ def extract_value(lines, start_index, pattern):
 
 # Define the function to continuously track a device
 def track_device(mac_address):
-    # allDevices changed to known_devices, as it seems allDevices is not defined anywhere in the script.
     global should_stop, current_state, known_devices
     device = known_devices.get(mac_address)
     if device is None:
@@ -153,8 +168,8 @@ def track_device(mac_address):
         os.system(f"/send_commands elev {elev}")
         time.sleep(1)  # Wait for a bit before checking again
 
-        # Find the device in the allDevices array
-        device = next((dev for dev in allDevices if dev['mac'] == device['mac']), None)
+        # Find the device in the known_devices array
+        device = next((dev for dev in known_devices.values() if dev['mac'] == mac_address), None)
         if device is None:
             continue
         
@@ -182,8 +197,7 @@ def start_tracking():
     if mac_address is None:
         return jsonify(success=False, message="mac_address is required"), 400
 
-    devices = get_known_devices()
-    device = devices.get(mac_address)
+    device = known_devices.get(mac_address)
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
 
@@ -196,6 +210,7 @@ def stop_tracking():
     global should_stop
     should_stop = True
     return jsonify(success=True)
+
 
 
 @app.route('/array_scan', methods=['POST'])
