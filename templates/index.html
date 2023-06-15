@@ -49,6 +49,7 @@
                         <th>Noise Level</th>
                         <th>Encryption</th>
                         <th>MANUF Intel</th>
+                        <th>Track</th>
                     </tr>
                 </thead>
 
@@ -167,7 +168,7 @@ $(document).ready(function() {
             $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
             wifiScan();
             // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 50); // 1000 ms = 1 second
+            intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
         } else {
             $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
             // If there's already an interval, clear it
@@ -223,6 +224,7 @@ function populateWifiDetailsTable(devices) {
             <td>${device.noise}</td>
             <td>${device.encryption}</td>
             <td>${device.device_type || ''}</td>
+            <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
         </tr>`;
         tbody.append(row);
     });
@@ -249,6 +251,22 @@ function populateWifiDetailsTable(devices) {
     });
 }
 
+    // Add click event listener to Track buttons
+    $('.track-button').click(function() {
+        const macAddress = $(this).data('mac');
+
+        $.post('/track_device', {
+            mac_address: macAddress
+        }, function(data) {
+            if (data.success) {
+                console.log('Started tracking device ' + macAddress);
+            } else {
+                console.log('Failed to start tracking device ' + macAddress);
+            }
+        });
+    });
+}
+    
 function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
 
