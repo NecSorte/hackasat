@@ -6,6 +6,8 @@ import serial
 import datetime
 import subprocess
 import re
+import numpy as np
+from threading import Thread
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
