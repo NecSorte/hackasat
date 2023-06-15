@@ -249,7 +249,6 @@ function populateWifiDetailsTable(devices) {
         // Re-populate the table with sorted devices
         populateWifiDetailsTable(devices);
     });
-}
 
     // Add click event listener to Track buttons
     $('.track-button').click(function() {
@@ -266,6 +265,7 @@ function populateWifiDetailsTable(devices) {
         });
     });
 }
+
     
 function sortDevices(devices, sortColumn, sortDirection) {
     const sortedDevices = [...devices];
