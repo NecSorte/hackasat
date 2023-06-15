@@ -152,7 +152,7 @@ def extract_value(lines, start_index, pattern):
     return None
 
 # Define the function to continuously track a device
-def track_device(mac_address):
+def track_device(mac_address, ser):
     global should_stop, current_state, known_devices
     device = known_devices.get(mac_address)
     if device is None:
@@ -165,7 +165,7 @@ def track_device(mac_address):
             action = np.argmax(q_table[current_state])  # Exploit learned values
 
         # Take action and get reward
-        azim, elev = adjust_antenna(current_state, action)
+        azim, elev = adjust_antenna(current_state, action, ser)
         send_command(ser, f'azim {azim}')
         send_command(ser, f'elev {elev}')
         time.sleep(1)  # Wait for a bit before checking again
@@ -190,7 +190,7 @@ def track_device(mac_address):
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
 # Function to adjust the antenna based on the current state and action
-def adjust_antenna(state, action):
+def adjust_antenna(state, action, ser):
     azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
     elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
     if action % 2 == 1:
@@ -201,7 +201,7 @@ def adjust_antenna(state, action):
     send_command(ser, f'elev {int(elev)}')
     
     return int(azim), int(elev)
-    
+
 # Route to start tracking
 # Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
