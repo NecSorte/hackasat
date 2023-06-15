@@ -182,6 +182,7 @@ $(document).ready(function() {
 var allDevices = [];  // Array to accumulate all devices
 
 // Define the function to perform a wifi scan
+// Define the function to perform a wifi scan
 function wifiScan() {
     // Call the /wifi_scan endpoint
     $.post('/wifi_scan', {
@@ -189,12 +190,17 @@ function wifiScan() {
     }, function(data) {
         if(data && data.devices) { // Check if devices array exists in response
             // Merge new devices with previously found devices
-            allDevices = [...allDevices, ...data.devices];
-
-            // Eliminate duplicates
-            const uniqueDevices = Array.from(new Set(allDevices.map(JSON.stringify))).map(JSON.parse);
+            data.devices.forEach(function(device) {
+                // Check if device is already present, if so, update it
+                let existingDeviceIndex = allDevices.findIndex(existingDevice => existingDevice.mac === device.mac);
+                if (existingDeviceIndex >= 0) {
+                    allDevices[existingDeviceIndex] = device; // Replace existing device with new data
+                } else {
+                    allDevices.push(device); // Add new device to array
+                }
+            });
             
-            populateWifiDetailsTable(uniqueDevices);
+            populateWifiDetailsTable(allDevices);
         }
     }).fail(function() {
         console.log('Failed to retrieve devices');
