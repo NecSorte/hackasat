@@ -177,13 +177,13 @@ def track_device(mac_address, ser):
         
         # Get the new signal strength from the device
         new_signal_strength = device.get('signal')
-        reward = new_signal_strength if new_signal_strength else -100
+        reward = str(new_signal_strength) if new_signal_strength else '-100'
 
         # Update Q-table
         old_value = q_table[current_state, action]
         next_max = np.max(q_table[current_state])
         
-        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        new_value = (1 - alpha) * old_value + alpha * (float(reward) + gamma * float(next_max))
         q_table[current_state, action] = new_value
 
         # Update current state
