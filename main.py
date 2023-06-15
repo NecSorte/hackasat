@@ -12,6 +12,8 @@ from manuf import manuf
 
 app = Flask(__name__)
 
+known_devices = {}  # Global known devices dictionary
+
 hasOUILookup = False
 
 try:
@@ -94,7 +96,6 @@ def handle_wifi_scan():
 def parse_wifi_scan_output(output):
     devices = {}
     lines = output.split('\n')
-
     p = manuf.MacParser()
 
     for index, line in enumerate(lines):
@@ -118,8 +119,10 @@ def parse_wifi_scan_output(output):
 
             devices[mac] = device_data
 
-    return devices
+            # Update the known devices dictionary
+            known_devices[mac] = device_data
 
+    return devices
 
 
 def extract_value(lines, start_index, pattern):
