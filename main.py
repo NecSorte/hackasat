@@ -133,7 +133,69 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
+# Define the function to continuously track a device
+def track_device(mac_address):
+    # allDevices changed to known_devices, as it seems allDevices is not defined anywhere in the script.
+    global should_stop, current_state, known_devices
+    device = known_devices.get(mac_address)
+    if device is None:
+        return
+    while not should_stop:
+        # Choose action
+        if random.uniform(0, 1) < epsilon:
+            action = np.random.choice(action_space)  # Explore action space
+        else:
+            action = np.argmax(q_table[current_state])  # Exploit learned values
 
+        # Take action and get reward
+        azim, elev = adjust_antenna(current_state, action)
+        os.system(f"/send_commands azim {azim}")
+        os.system(f"/send_commands elev {elev}")
+        time.sleep(1)  # Wait for a bit before checking again
+
+        # Find the device in the allDevices array
+        device = next((dev for dev in allDevices if dev['mac'] == device['mac']), None)
+        if device is None:
+            continue
+        
+        # Get the new signal strength from the device
+        new_signal_strength = device.get('signal')
+        reward = new_signal_strength if new_signal_strength else -100
+
+        # Update Q-table
+        old_value = q_table[current_state, action]
+        next_max = np.max(q_table[current_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (reward + gamma * next_max)
+        q_table[current_state, action] = new_value
+
+        # Update current state
+        current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
+        
+# Route to start tracking
+# Update the /track_device route to track one MAC address
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form.get('mac_address')
+    if mac_address is None:
+        return jsonify(success=False, message="mac_address is required"), 400
+
+    devices = get_known_devices()
+    device = devices.get(mac_address)
+    if device is None:
+        return jsonify(success=False, message="Device not found"), 404
+
+    Thread(target=track_device, args=(mac_address,)).start()  # Track the MAC address
+
+    return jsonify(success=True)
+
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
+    should_stop = True
+    return jsonify(success=True)
 
 
 @app.route('/array_scan', methods=['POST'])
