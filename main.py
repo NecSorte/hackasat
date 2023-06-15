@@ -193,7 +193,7 @@ def track_device(mac_address, ser):
 # Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
-    global should_stop, ser  # Add ser to global variables
+    global should_stop
     should_stop = False
     mac_address = request.form.get('mac_address')
     if mac_address is None:
@@ -202,6 +202,8 @@ def start_tracking():
     device = known_devices.get(mac_address)
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
+
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Update with your serial port details
 
     Thread(target=track_device, args=(mac_address, ser)).start()  # Track the MAC address
 
