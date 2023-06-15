@@ -189,6 +189,19 @@ def track_device(mac_address, ser):
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
 
+# Function to adjust the antenna based on the current state and action
+def adjust_antenna(state, action, ser):
+    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
+    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
+    if action % 2 == 1:
+        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    
+    # Send commands to the antenna
+    send_command(ser, f'azim {int(azim)}')
+    send_command(ser, f'elev {int(elev)}')
+    
+    return int(azim), int(elev)
+
 # Route to start tracking
 # Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
