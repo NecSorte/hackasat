@@ -39,6 +39,7 @@
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
+                        <th>Track</th>
                         <th>MAC Address</th>
                         <th>ESSID</th>
                         <th>Mode</th>
@@ -49,7 +50,6 @@
                         <th>Noise Level</th>
                         <th>Encryption</th>
                         <th>MANUF Intel</th>
-                        <th>Track</th>
                     </tr>
                 </thead>
 
@@ -214,6 +214,8 @@ function populateWifiDetailsTable(devices) {
     // Update the table body with sorted devices
     sortedDevices.forEach(function (device) {
         const row = `<tr>
+        <tr>
+            <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
             <td>${device.mac}</td>
             <td>${device.essid}</td>
             <td>${device.mode}</td>
