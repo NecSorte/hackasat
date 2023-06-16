@@ -170,7 +170,6 @@ $(document).ready(function() {
         }
     }
 
-    
     $('#wifi-scan-button').click(function() {
         wifiScanActive = !wifiScanActive; // Toggle the wifi scan state
 
@@ -190,48 +189,46 @@ $(document).ready(function() {
         }
     });
 
-var allDevices = [];  // Array to accumulate all devices
+    var allDevices = [];  // Array to accumulate all devices
 
-// Define the function to perform a wifi scan
-// Define the function to perform a wifi scan
-function wifiScan() {
-    // Call the /wifi_scan endpoint
-    $.post('/wifi_scan', {
-        interface: $('#interface-selector').val()
-    }, function(data) {
-        if(data && data.devices) { // Check if devices array exists in response
-            // Merge new devices with previously found devices
-            data.devices.forEach(function(device) {
-                // Check if device is already present, if so, update it
-                let existingDeviceIndex = allDevices.findIndex(existingDevice => existingDevice.mac === device.mac);
-                if (existingDeviceIndex >= 0) {
-                    allDevices[existingDeviceIndex] = device; // Replace existing device with new data
-                } else {
-                    allDevices.push(device); // Add new device to array
-                }
-            });
-            
-            populateWifiDetailsTable(allDevices);
-        }
-    }).fail(function() {
-        console.log('Failed to retrieve devices');
-    });
-}
+    // Define the function to perform a wifi scan
+    function wifiScan() {
+        // Call the /wifi_scan endpoint
+        $.post('/wifi_scan', {
+            interface: $('#interface-selector').val()
+        }, function(data) {
+            if(data && data.devices) { // Check if devices array exists in response
+                // Merge new devices with previously found devices
+                data.devices.forEach(function(device) {
+                    // Check if device is already present, if so, update it
+                    let existingDeviceIndex = allDevices.findIndex(existingDevice => existingDevice.mac === device.mac);
+                    if (existingDeviceIndex >= 0) {
+                        allDevices[existingDeviceIndex] = device; // Replace existing device with new data
+                    } else {
+                        allDevices.push(device); // Add new device to array
+                    }
+                });
+                
+                populateWifiDetailsTable(allDevices);
+            }
+        }).fail(function() {
+            console.log('Failed to retrieve devices');
+        });
+    }
 
-function populateWifiDetailsTable(devices) {
-    // Clear the table body
-    const tbody = $('#wifi-details-table tbody');
-    tbody.empty();
+    function populateWifiDetailsTable(devices) {
+        // Clear the table body
+        const tbody = $('#wifi-details-table tbody');
+        tbody.empty();
 
-    // Sort devices based on the clicked column
-    const sortColumn = tbody.data('sort-column');
-    const sortDirection = tbody.data('sort-direction');
-    const sortedDevices = sortDevices(devices, sortColumn, sortDirection);
+        // Sort devices based on the clicked column
+        const sortColumn = tbody.data('sort-column');
+        const sortDirection = tbody.data('sort-direction');
+        const sortedDevices = sortDevices(devices, sortColumn, sortDirection);
 
-    // Update the table body with sorted devices
-    sortedDevices.forEach(function (device) {
-        const row = `<tr>
-        <tr>
+        // Update the table body with sorted devices
+        sortedDevices.forEach(function (device) {
+            const row = `<tr>
             <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
             <td>${device.mac}</td>
             <td>${device.essid}</td>
@@ -243,105 +240,100 @@ function populateWifiDetailsTable(devices) {
             <td>${device.noise}</td>
             <td>${device.encryption}</td>
             <td>${device.device_type || ''}</td>
-            <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
-        </tr>`;
-        tbody.append(row);
-    });
-
-    // Add click event listeners to column headers for sorting
-    $('#wifi-details-table th').click(function () {
-        const column = $(this).data('column');
-        const currentSortColumn = tbody.data('sort-column');
-        let currentSortDirection = tbody.data('sort-direction');
-
-        // Toggle sort direction if clicking on the same column
-        if (column === currentSortColumn) {
-            currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSortDirection = 'asc';
-        }
-
-        // Update data attributes with new sort column and direction
-        tbody.data('sort-column', column);
-        tbody.data('sort-direction', currentSortDirection);
-
-        // Re-populate the table with sorted devices
-        populateWifiDetailsTable(devices);
-    });
-
-    // Add click event listener to Track buttons
-    $('.track-button').click(function() {
-        $(this).css('background-color', 'green').text('Tracking...');
-        const macAddress = $(this).data('mac');
-        const port = $('#port-selector').val();
-    
-        $.post('/track_device', {
-            mac_address: macAddress,
-            port: port
-        }, function(data) {
-            if (data.success) {
-                console.log('Started tracking device ' + macAddress);
-            } else {
-                console.log('Failed to start tracking device ' + macAddress);
-            }
+            </tr>`;
+            tbody.append(row);
         });
-    });
-    $('#freq-form').submit(function(e) {
-        e.preventDefault();
 
-        const tracker = $('#tracker').val();
-        const frequency = $('#frequency').val();
+        // Add click event listeners to column headers for sorting
+        $('#wifi-details-table th').click(function () {
+            const column = $(this).data('column');
+            const currentSortColumn = tbody.data('sort-column');
+            let currentSortDirection = tbody.data('sort-direction');
+
+            // Toggle sort direction if clicking on the same column
+            if (column === currentSortColumn) {
+                currentSortDirection = currentSortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortDirection = 'asc';
+            }
+
+            // Update data attributes with new sort column and direction
+            tbody.data('sort-column', column);
+            tbody.data('sort-direction', currentSortDirection);
+
+            // Re-populate the table with sorted devices
+            populateWifiDetailsTable(devices);
+        });
+
+        // Add click event listener to Track buttons
+        $('.track-button').click(function() {
+            $(this).css('background-color', 'green').text('Tracking...');
+            const macAddress = $(this).data('mac');
+            const port = $('#port-selector').val();
         
-        // Ensure the input is a valid number
-        if(isNaN(frequency) || frequency == '') {
-            alert('Please enter a valid number for frequency');
-            return;
-        }
-
-        $.post('/manual_track', {
-            tracker: tracker,
-            frequency: frequency
-        }, function(data) {
-            if (data.success) {
-                console.log('Started tracking frequency ' + frequency);
+            $.post('/track_device', {
+                mac_address: macAddress,
+                port: port
+            }, function(data) {
+                if (data.success) {
+                    console.log('Started tracking device ' + macAddress);
+                } else {
+                    console.log('Failed to start tracking device ' + macAddress);
+                }
+            });
+        });
+        $('#freq-form').submit(function(e) {
+            e.preventDefault();
+    
+            const tracker = $('#tracker').val();
+            const frequency = $('#frequency').val();
+            
+            // Ensure the input is a valid number
+            if(isNaN(frequency) || frequency == '') {
+                alert('Please enter a valid number for frequency');
+                return;
+            }
+    
+            $.post('/manual_track', {
+                tracker: tracker,
+                frequency: frequency
+            }, function(data) {
+                if (data.success) {
+                    console.log('Started tracking frequency ' + frequency);
+                } else {
+                    console.log('Failed to start tracking frequency ' + frequency);
+                }
+            });
+        });
+    }
+    
+    function sortDevices(devices, sortColumn, sortDirection) {
+        const sortedDevices = [...devices];
+    
+        sortedDevices.sort(function (a, b) {
+            const valueA = a[sortColumn];
+            const valueB = b[sortColumn];
+    
+            if (valueA == null || valueA === undefined) {
+                return sortDirection === 'asc' ? -1 : 1;
+            } else if (valueB == null || valueB === undefined) {
+                return sortDirection === 'asc' ? 1 : -1;
+            }
+    
+            const lowerCaseA = valueA.toString().toLowerCase();
+            const lowerCaseB = valueB.toString().toLowerCase();
+    
+            if (lowerCaseA < lowerCaseB) {
+                return sortDirection === 'asc' ? -1 : 1;
+            } else if (lowerCaseA > lowerCaseB) {
+                return sortDirection === 'asc' ? 1 : -1;
             } else {
-                console.log('Failed to start tracking frequency ' + frequency);
+                return 0;
             }
         });
-    });
-});
-}
-
     
-function sortDevices(devices, sortColumn, sortDirection) {
-    const sortedDevices = [...devices];
-
-    sortedDevices.sort(function (a, b) {
-        const valueA = a[sortColumn];
-        const valueB = b[sortColumn];
-
-        if (valueA == null || valueA === undefined) {
-            return sortDirection === 'asc' ? -1 : 1;
-        } else if (valueB == null || valueB === undefined) {
-            return sortDirection === 'asc' ? 1 : -1;
-        }
-
-        const lowerCaseA = valueA.toString().toLowerCase();
-        const lowerCaseB = valueB.toString().toLowerCase();
-
-        if (lowerCaseA < lowerCaseB) {
-            return sortDirection === 'asc' ? -1 : 1;
-        } else if (lowerCaseA > lowerCaseB) {
-            return sortDirection === 'asc' ? 1 : -1;
-        } else {
-            return 0;
-        }
-    });
-
-    return sortedDevices;
-}
-
-    
+        return sortedDevices;
+    }
 });
 </script>
 </body>
