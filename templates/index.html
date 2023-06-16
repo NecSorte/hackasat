@@ -39,17 +39,18 @@
             <table id="wifi-details-table" class="table table-striped">
                 <thead>
                     <tr>
-                        <th>Track</th>
-                        <th>MAC Address</th>
+                        <th>Actions</th>
+                        <th>BSSID</th>
+                        <th>PWR</th>
+                        <th>Beacons</th>
+                        <th>#Data</th>
+                        <th>/s</th>
+                        <th>CH</th>
+                        <th>MB</th>
+                        <th>ENC</th>
+                        <th>CIPHER</th>
+                        <th>AUTH</th>
                         <th>ESSID</th>
-                        <th>Mode</th>
-                        <th>Channel</th>
-                        <th>Frequency</th>
-                        <th>Quality</th>
-                        <th>Signal Level</th>
-                        <th>Noise Level</th>
-                        <th>Encryption</th>
-                        <th>MANUF Intel</th>
                     </tr>
                 </thead>
 
@@ -183,6 +184,8 @@ var allDevices = [];  // Array to accumulate all devices
 
 // Define the function to perform a wifi scan
 // Define the function to perform a wifi scan
+
+// Define the function to perform a wifi scan
 function wifiScan() {
     // Call the /wifi_scan endpoint
     $.post('/wifi_scan', {
@@ -192,7 +195,7 @@ function wifiScan() {
             // Merge new devices with previously found devices
             data.devices.forEach(function(device) {
                 // Check if device is already present, if so, update it
-                let existingDeviceIndex = allDevices.findIndex(existingDevice => existingDevice.mac === device.mac);
+                let existingDeviceIndex = allDevices.findIndex(existingDevice => existingDevice.bssid === device.bssid);
                 if (existingDeviceIndex >= 0) {
                     allDevices[existingDeviceIndex] = device; // Replace existing device with new data
                 } else {
@@ -220,20 +223,18 @@ function populateWifiDetailsTable(devices) {
     // Update the table body with sorted devices
     sortedDevices.forEach(function (device) {
         const row = `<tr>
-        <tr>
-            <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
-            <td>${device.mac}</td>
-            <td>${device.essid}</td>
-            <td>${device.mode}</td>
-            <td>${device.channel}</td>
-            <td>${device.frequency}</td>
-            <td>${device.quality}</td>
-            <td>${device.signal}</td>
-            <td>${device.noise}</td>
-            <td>${device.encryption}</td>
-            <td>${device.device_type || ''}</td>
-            <td><button class="btn btn-success track-button" data-mac="${device.mac}">Track</button></td>
-        </tr>`;
+        <td>${device.bssid}</td>
+        <td>${device.pwr}</td>
+        <td>${device.beacons}</td>
+        <td>${device.numData}</td>
+        <td>${device.perSecond}</td>
+        <td>${device.ch}</td>
+        <td>${device.mb}</td>
+        <td>${device.enc}</td>
+        <td>${device.cipher}</td>
+        <td>${device.auth}</td>
+        <td>${device.essid}</td>
+    </tr>`;
         tbody.append(row);
     });
 
