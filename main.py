@@ -217,6 +217,8 @@ def adjust_antenna(state, action, ser):
 # Update the /track_device route to track one MAC address
 @app.route('/track_device', methods=['POST'])
 def start_tracking():
+    print(request.data)  # this prints the whole request body
+    print(request.headers)  # this prints the headers
     global should_stop
     should_stop = False
     mac_address = request.form.get('mac_address')
