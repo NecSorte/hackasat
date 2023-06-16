@@ -31,6 +31,7 @@ q_table = np.zeros((state_space, action_space))
 # Global state
 current_state = 0
 should_stop = False
+previous_quality = None 
 
 hasOUILookup = False
 
@@ -151,9 +152,8 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
-# Define the function to continuously track a device
 def track_device(mac_address, ser):
-    global should_stop, current_state, known_devices
+    global should_stop, current_state, known_devices, previous_quality
     device = known_devices.get(mac_address)
     if device is None:
         return
@@ -168,16 +168,21 @@ def track_device(mac_address, ser):
         azim, elev = adjust_antenna(current_state, action, ser)
         send_command(ser, f'azim {azim}')
         send_command(ser, f'elev {elev}')
-        time.sleep(1)  # Wait for a bit before checking again
+        time.sleep(2)  # Wait for a bit before checking again
 
         # Find the device in the known_devices array
         device = next((dev for dev in known_devices.values() if dev['mac'] == mac_address), None)
         if device is None:
             continue
         
-        # Get the new signal strength from the device
-        new_signal_strength = device.get('signal')
-        reward = str(new_signal_strength) if new_signal_strength else '-100'
+        # Get the new quality from the device
+        current_quality = device.get('quality')
+        if current_quality and previous_quality is not None:
+            reward = 1 if current_quality > previous_quality else -1
+        else:
+            reward = 0  # Neutral reward when there's no previous quality to compare with
+
+        previous_quality = current_quality  # Update previous_quality for the next iteration
 
         # Update Q-table
         old_value = q_table[current_state, action]
@@ -188,6 +193,7 @@ def track_device(mac_address, ser):
 
         # Update current state
         current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
+
 
 # Function to adjust the antenna based on the current state and action
 def adjust_antenna(state, action, ser):
