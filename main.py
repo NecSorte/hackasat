@@ -206,7 +206,19 @@ def adjust_antenna(state, action, ser):
     elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
     if action % 2 == 1:
         azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
-    
+
+    # Ensure azim is within limits
+    if azim < AZIMUTH_RANGE[0]:
+        azim = AZIMUTH_RANGE[0]
+    elif azim > AZIMUTH_RANGE[1]:
+        azim = AZIMUTH_RANGE[1]
+
+    # Ensure elev is within limits
+    if elev < ELEVATION_RANGE[0]:
+        elev = ELEVATION_RANGE[0]
+    elif elev > ELEVATION_RANGE[1]:
+        elev = ELEVATION_RANGE[1]
+
     # Send commands to the antenna
     send_command(ser, f'azim {int(azim)}')
     send_command(ser, f'elev {int(elev)}')
