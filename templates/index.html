@@ -33,7 +33,18 @@
 
             <div id="wifi-scan-results" class="mt-2"></div>
         </div>
-
+        <form id="freq-form">
+            <label for="Manual Tracker">Choose a tracker:</label>
+            <select id="tracker" name="tracker">
+                <option value="hackrf">hackrf</option>
+                <option value="bladerf">bladerf</option>
+            </select>
+            
+            <label for="frequency">Frequency (MHz):</label>
+            <input type="text" id="frequency" name="frequency">
+            
+            <button type="submit">Manually track freq</button>
+        </form>
         <div id="wifi-details" class="mb-3">
             <h2>WiFi Details</h2>
             <table id="wifi-details-table" class="table table-striped">
@@ -260,6 +271,7 @@ function populateWifiDetailsTable(devices) {
 
     // Add click event listener to Track buttons
     $('.track-button').click(function() {
+        $(this).css('background-color', 'green').text('Tracking...');
         const macAddress = $(this).data('mac');
         const port = $('#port-selector').val();
     
@@ -274,6 +286,30 @@ function populateWifiDetailsTable(devices) {
             }
         });
     });
+    $('#freq-form').submit(function(e) {
+        e.preventDefault();
+
+        const tracker = $('#tracker').val();
+        const frequency = $('#frequency').val();
+        
+        // Ensure the input is a valid number
+        if(isNaN(frequency) || frequency == '') {
+            alert('Please enter a valid number for frequency');
+            return;
+        }
+
+        $.post('/manual_track', {
+            tracker: tracker,
+            frequency: frequency
+        }, function(data) {
+            if (data.success) {
+                console.log('Started tracking frequency ' + frequency);
+            } else {
+                console.log('Failed to start tracking frequency ' + frequency);
+            }
+        });
+    });
+});
 }
 
     
