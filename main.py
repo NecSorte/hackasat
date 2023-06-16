@@ -128,7 +128,7 @@ def parse_wifi_scan_output(output):
                 "mode": extract_value(lines, index, "Mode:(.*)"),
                 "channel": extract_value(lines, index, "Channel:(.*)"),
                 "frequency": extract_value(lines, index, "Frequency:(.*)"),
-                "quality": extract_value(lines, index, "Quality=(.*)"),
+                "quality": extract_value(lines, index, "Quality=(\d+)/70"),
                 "signal": extract_value(lines, index, "Signal level=(.*)"),
                 "noise": extract_value(lines, index, "Noise level=(.*)"),
                 "encryption": extract_value(lines, index, "Encryption key:(.*)"),
