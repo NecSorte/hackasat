@@ -6,6 +6,8 @@ import serial
 import datetime
 import subprocess
 import re
+import numpy as np
+from threading import Thread
 
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
@@ -13,6 +15,22 @@ from manuf import manuf
 app = Flask(__name__)
 
 known_devices = {}  # Global known devices dictionary
+
+# Constants
+AZIMUTH_RANGE = (160, 6400)
+ELEVATION_RANGE = (650, 1450)
+
+# Q-Learning parameters
+alpha = 0.5
+gamma = 0.95
+epsilon = 0.1
+state_space = 10
+action_space = 4
+q_table = np.zeros((state_space, action_space))
+
+# Global state
+current_state = 0
+should_stop = False
 
 hasOUILookup = False
 
@@ -133,6 +151,82 @@ def extract_value(lines, start_index, pattern):
             return match.group(1)
     return None
 
+# Define the function to continuously track a device
+def track_device(mac_address, ser):
+    global should_stop, current_state, known_devices
+    device = known_devices.get(mac_address)
+    if device is None:
+        return
+    while not should_stop:
+        # Choose action
+        if random.uniform(0, 1) < epsilon:
+            action = np.random.choice(action_space)  # Explore action space
+        else:
+            action = np.argmax(q_table[current_state])  # Exploit learned values
+
+        # Take action and get reward
+        azim, elev = adjust_antenna(current_state, action, ser)
+        send_command(ser, f'azim {azim}')
+        send_command(ser, f'elev {elev}')
+        time.sleep(1)  # Wait for a bit before checking again
+
+        # Find the device in the known_devices array
+        device = next((dev for dev in known_devices.values() if dev['mac'] == mac_address), None)
+        if device is None:
+            continue
+        
+        # Get the new signal strength from the device
+        new_signal_strength = device.get('signal')
+        reward = str(new_signal_strength) if new_signal_strength else '-100'
+
+        # Update Q-table
+        old_value = q_table[current_state, action]
+        next_max = np.max(q_table[current_state])
+        
+        new_value = (1 - alpha) * old_value + alpha * (float(reward) + gamma * float(next_max))
+        q_table[current_state, action] = new_value
+
+        # Update current state
+        current_state = int(azim / ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space))
+
+# Function to adjust the antenna based on the current state and action
+def adjust_antenna(state, action, ser):
+    azim = state * ((AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space)
+    elev = ELEVATION_RANGE[0] if action < 2 else ELEVATION_RANGE[1]
+    if action % 2 == 1:
+        azim += (AZIMUTH_RANGE[1] - AZIMUTH_RANGE[0]) / state_space
+    
+    # Send commands to the antenna
+    send_command(ser, f'azim {int(azim)}')
+    send_command(ser, f'elev {int(elev)}')
+    
+    return int(azim), int(elev)
+
+# Route to start tracking
+# Update the /track_device route to track one MAC address
+@app.route('/track_device', methods=['POST'])
+def start_tracking():
+    global should_stop
+    should_stop = False
+    mac_address = request.form.get('mac_address')
+    if mac_address is None:
+        return jsonify(success=False, message="mac_address is required"), 400
+
+    device = known_devices.get(mac_address)
+    if device is None:
+        return jsonify(success=False, message="Device not found"), 404
+
+    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Update with your serial port details
+
+    Thread(target=track_device, args=(mac_address, ser)).start()  # Track the MAC address
+
+    return jsonify(success=True)
+
+@app.route('/stop_tracking', methods=['POST'])
+def stop_tracking():
+    global should_stop
+    should_stop = True
+    return jsonify(success=True)
 
 
 
