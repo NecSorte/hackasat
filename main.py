@@ -173,7 +173,7 @@ def track_device(mac_address, ser):
         azim, elev = adjust_antenna(current_state, action, ser)
         send_command(ser, f'azim {azim}')
         send_command(ser, f'elev {elev}')
-        time.sleep(2)  # Wait for a bit before checking again
+        time.sleep(5)  # Wait for a bit before checking again
 
         # Find the device in the known_devices array
         device = next((dev for dev in known_devices.values() if dev['mac'] == mac_address), None)
