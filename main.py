@@ -262,11 +262,15 @@ def handle_array_scan():
     port = request.form['port']
     ser = serial.Serial(port, 9600, timeout=1)
     
-    azim_min = 170
-    azim_max = 6301
-    elev_min = 650
-    elev_max = 1401
+    azim_min = AZIMUTH_RANGE[0]
+    azim_max = AZIMUTH_RANGE[1]
+    elev_min = ELEVATION_RANGE[0]
+    elev_max = ELEVATION_RANGE[1]
     step = 500
+
+    # Prevent azim and elev from exceeding their maximum values due to steps
+    azim_max = azim_max - (azim_max % step)
+    elev_max = elev_max - (elev_max % step)
 
     for azim in range(azim_min, azim_max + 1, step):
         command = f'G1 X{azim}'
@@ -277,6 +281,7 @@ def handle_array_scan():
 
     ser.close()
     return jsonify(success=True)
+
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
