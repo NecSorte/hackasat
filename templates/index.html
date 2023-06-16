@@ -261,9 +261,11 @@ function populateWifiDetailsTable(devices) {
     // Add click event listener to Track buttons
     $('.track-button').click(function() {
         const macAddress = $(this).data('mac');
-
+        const port = $('#port-selector').val();
+    
         $.post('/track_device', {
-            mac_address: macAddress
+            mac_address: macAddress,
+            port: port
         }, function(data) {
             if (data.success) {
                 console.log('Started tracking device ' + macAddress);
