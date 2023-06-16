@@ -281,7 +281,41 @@ def handle_array_scan():
 
     ser.close()
     return jsonify(success=True)
+    
+@app.route('/manual_track', methods=['POST'])
+def manual_track():
+    tracker = request.form.get('tracker')
+    frequency = request.form.get('frequency')
 
+    success = track_frequency(tracker, frequency)
+
+    if success:
+        return jsonify(success=True)
+    else:
+        return jsonify(success=False), 400
+
+def track_frequency(tracker, frequency):
+    try:
+        if tracker.lower() == 'hackrf':
+            track_with_hackrf(frequency)
+        elif tracker.lower() == 'bladerf':
+            track_with_bladerf(frequency)
+        else:
+            return False
+        return True
+
+    except Exception as e:
+        print(e)
+        return False
+
+# Placeholder functions
+def track_with_hackrf(frequency):
+    print(f"Tracking with HackRF at frequency {frequency} MHz")
+    # Your implementation here
+
+def track_with_bladerf(frequency):
+    print(f"Tracking with BladeRF at frequency {frequency} MHz")
+    # Your implementation here
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
