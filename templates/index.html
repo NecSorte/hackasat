@@ -178,7 +178,7 @@ $(document).ready(function() {
             $(this).text('Stop WiFi Scan').addClass('btn-danger').removeClass('btn-primary');
             wifiScan();
             // Set up the interval for subsequent scans
-            intervalId = setInterval(wifiScan, 1000); // 1000 ms = 1 second
+            intervalId = setInterval(wifiScan, 3000); // 1000 ms = 1 second
         } else {
             $(this).text('Start WiFi Scan').addClass('btn-primary').removeClass('btn-danger');
             // If there's already an interval, clear it
