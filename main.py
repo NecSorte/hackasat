@@ -6,9 +6,10 @@ import serial
 import datetime
 import subprocess
 import re
+import signal
 import numpy as np
 from threading import Thread
-
+from subprocess import Popen, PIPE
 from flask import Flask, render_template, request, jsonify
 from manuf import manuf
 
@@ -250,6 +251,56 @@ def handle_array_scan():
 
     ser.close()
     return jsonify(success=True)
+
+@app.route('/start_airodump', methods=['POST'])
+def start_airodump():
+    interface = request.form['interface']
+    global airodump_process
+
+    airodump_process = Popen(['airodump-ng', interface], stdout=PIPE, stderr=PIPE)
+
+    # Let airodump-ng run for a certain period of time to capture data
+    time.sleep(10)
+
+    # Then terminate the process
+    airodump_process.send_signal(signal.SIGINT)
+
+    return jsonify(success=True)
+
+
+@app.route('/read_airodump', methods=['GET'])
+def read_airodump():
+    global airodump_process
+    devices = []
+
+    # Read the output from airodump-ng
+    while True:
+        line = airodump_process.stdout.readline().decode().strip()
+
+        # Break the loop once we reach the end of the output
+        if not line:
+            break
+
+        # Parse the output and add devices to list
+        devices.append(parse_airodump_line(line))
+
+    return jsonify(devices=devices)
+
+
+def parse_airodump_line(line):
+    # Parse the line from airodump-ng output and return as dictionary
+    # You may need to modify this function depending on your needs
+
+    fields = line.split()
+    return {
+        'mac': fields[0],
+        'power': fields[8],
+        'beacons': fields[10],
+        'data': fields[11],
+        'channel': fields[3],
+        'speed': fields[4],
+        'encryption': fields[5]
+    }
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
