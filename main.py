@@ -157,6 +157,11 @@ def track_device(mac_address, ser):
     device = known_devices.get(mac_address)
     if device is None:
         return
+    
+    # Initial antenna adjustments
+    send_command(ser, 'azim 3200')
+    send_command(ser, 'elev 750')
+    
     while not should_stop:
         # Choose action
         if random.uniform(0, 1) < epsilon:
