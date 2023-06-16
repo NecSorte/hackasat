@@ -220,18 +220,20 @@ def start_tracking():
     global should_stop
     should_stop = False
     mac_address = request.form.get('mac_address')
-    if mac_address is None:
-        return jsonify(success=False, message="mac_address is required"), 400
+    port = request.form.get('port')  # Fetch the port from the form
+    if mac_address is None or port is None:
+        return jsonify(success=False, message="mac_address and port are required"), 400
 
     device = known_devices.get(mac_address)
     if device is None:
         return jsonify(success=False, message="Device not found"), 404
 
-    ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)  # Update with your serial port details
+    ser = serial.Serial(port, 9600, timeout=1)  # Use the selected port
 
     Thread(target=track_device, args=(mac_address, ser)).start()  # Track the MAC address
 
     return jsonify(success=True)
+
 
 @app.route('/stop_tracking', methods=['POST'])
 def stop_tracking():
