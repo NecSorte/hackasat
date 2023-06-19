@@ -4,12 +4,14 @@ python-socketio==5.5.2
 pyserial==3.5
 manuf
 git+https://github.com/coolbho3k/manuf.git
+git+https://github.com/aircrack-ng/rtl8812au
 requests==2.26.0
 numpy==1.21.2
 pandas==1.3.3
 scipy==1.7.1
 matplotlib==3.4.3
 hackrf
+bladerf
 pyrtlsdr==0.2.2
 gnuradio
 
