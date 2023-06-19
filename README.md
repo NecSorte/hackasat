@@ -43,6 +43,3 @@ The application should now be running on your local machine at `http://localhost
 - Use the provided interface to interact with your antenna and perform scans.
 - You can also use the available REST API endpoints for a more programmatic interaction.
 
----
-
-Please customize the README as you see fit, adding more details about the project, your team, and any specific usage instructions.
