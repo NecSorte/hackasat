@@ -1,66 +1,48 @@
-# HACKASAT Cyber Research Project
-USE THIS RESPONSIBLY! THIS IS FOR RESEARCH ONLY!!!!
+# Antenna Tracker Application
 
-This project focuses on creating a WiFi tracker using Python, Flask, Docker, and Kali Linux. It's a tool designed to monitor and analyze the WiFi networks around you. 
+This application enables you to track and scan for Wi-Fi signals from a particular device, move your antenna to optimal positions, and interact with the antenna directly. The application uses Flask for the backend, and uses the `iwlist` command on Linux to scan for Wi-Fi signals.
 
-## Getting Started
+## Features:
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
+- Scan for Wi-Fi signals
+- Interact with the antenna directly via a serial port
+- Move the antenna to different azimuth and elevation angles to optimize signal quality
+- Track a specific device by its MAC address
 
-### Prerequisites
+## Requirements
 
-1. Docker
-2. Python 3
-3. Pip (Python package installer)
-4. Git
-5. A machine running Kali Linux or a similar distribution
+- Python 3.6+
+- Ubuntu Lite OS / Tested on Kali 
+- `iwlist` command (part of the wireless-tools package in Ubuntu)
 
-### Installation
+## Installation Guide
 
-1. Clone the repository to your local machine:
-   ```
-   git clone https://github.com/username/wifi-tracker.git
-   ```
-2. Navigate to the project directory:
-   ```
-   cd wifi-tracker
-   ```
-3. Build the Docker image:
-   ```
-   docker build -t wifi-tracker .
-   ```
-4. Run the Docker container:
-   ```
-   docker run -d -p 5000:5000 wifi-tracker
-   ```
+1. Clone the repository:
+    ```
+    git clone https://github.com/necsorte/hackasat.git
+    cd antenna-tracker
+    ```
+2. Install the necessary system dependencies:
+    ```
+    sudo apt-get update && sudo apt-get install -y python3-pip python3-dev gcc libpq-dev wireless-tools
+    ```
+3. Install the required Python libraries:
+    ```
+    sudo pip3 install -r requirements.txt
+    ```
+4. Run the application:
+    ```
+    python3 main.py
+    ```
 
-### Usage
+The application should now be running on your local machine at `http://localhost:5000`.
 
-Navigate to `http://localhost:5000` on your web browser to access the application.
+## Usage
 
-## Features
-
-1. WiFi network scanning.
-2. Display network details, such as SSID, signal strength, and security type.
-3. Ability to use USB devices from the host machine within the Docker container using the USBIP protocol.
-4. Flask web application for user interaction.
-
-## Contribution
-
-If you wish to contribute to this project, please fork the repository and submit a pull request.
-
-## Disclaimer
-
-This tool is for educational purposes only. Unauthorized network scanning can violate privacy laws and terms of service. Always seek permission before accessing any network other than your own.
-
-## License
-
-This project is licensed under the MIT License. See the LICENSE file for details.
-
-## Acknowledgments
-
-Thanks to everyone who contributed to this project. Your efforts have helped in creating a tool that will benefit many developers and network enthusiasts.
+- Access the application on your browser at `http://localhost:5000`.
+- Use the provided interface to interact with your antenna and perform scans.
+- You can also use the available REST API endpoints for a more programmatic interaction.
 
 ---
 
-For more details, please refer to the project documentation. If you have any questions or issues, feel free to open an issue on the project's GitHub page.
+Please customize the README as you see fit, adding more details about the project, your team, and any specific usage instructions.
